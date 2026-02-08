@@ -1,0 +1,25 @@
+import http from './http'
+
+export const fetchTeacherCourses = () => http.get('/api/teacher/courses')
+export const createTeacherCourse = (data) => http.post('/api/teacher/courses', data)
+export const updateTeacherCourse = (id, data) => http.put(`/api/teacher/courses/${id}`, data)
+export const deleteTeacherCourse = (id) => http.delete(`/api/teacher/courses/${id}`)
+export const fetchTeacherCourseDetail = (id) => http.get(`/api/teacher/courses/${id}`)
+export const addTeacherChapter = (courseId, data) =>
+  http.post(`/api/teacher/courses/${courseId}/chapters`, data)
+export const updateTeacherChapter = (id, data) => http.put(`/api/teacher/chapters/${id}`, data)
+export const deleteTeacherChapter = (id) => http.delete(`/api/teacher/chapters/${id}`)
+export const addTeacherLesson = (chapterId, data) =>
+  http.post(`/api/teacher/chapters/${chapterId}/lessons`, data)
+export const updateTeacherLesson = (id, data) => http.put(`/api/teacher/lessons/${id}`, data)
+export const deleteTeacherLesson = (id) => http.delete(`/api/teacher/lessons/${id}`)
+
+export const fetchTeacherQuestions = (params) => http.get('/api/teacher/questions', { params })
+export const createTeacherQuestion = (data) => http.post('/api/teacher/questions', data)
+export const updateTeacherQuestion = (id, data) => http.put(`/api/teacher/questions/${id}`, data)
+export const deleteTeacherQuestion = (id) => http.delete(`/api/teacher/questions/${id}`)
+export const importTeacherQuestions = (data) => http.post('/api/teacher/questions/import', data)
+
+export const createTeacherExamTask = (data) => http.post('/api/teacher/exams', data)
+export const fetchTeacherExamTasks = () => http.get('/api/teacher/exams')
+export const deleteTeacherExamTask = (id) => http.delete(`/api/teacher/exams/${id}`)

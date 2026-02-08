@@ -1,0 +1,123 @@
+springdoc:
+  paths-to-match: /api/**
+  swagger-ui:
+    operations-sorter: alpha
+
+spring:
+  application:
+    name: back
+
+  # ======================
+  # 邮件配置
+  # ======================
+  mail:
+    host: smtp.163.com
+    username: 19710119320@163.com
+    password: TPnuuWfPm528cmk8
+    port: 465
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+
+  # ======================
+  # RabbitMQ
+  # ======================
+  rabbitmq:
+    addresses: 192.168.109.129
+    username: admin
+    password: admin
+    virtual-host: /
+    listener:
+      simple:
+        acknowledge-mode: auto
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000
+
+  amqp:
+    deserialization:
+      trust:
+        all: false
+
+  # ======================
+  # 数据源
+  # ======================
+  datasource:
+    url: jdbc:mysql://localhost:3306/online?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # ======================
+  # Redis（无密码）
+  # ======================
+
+
+  # ======================
+  # 安全 / JWT
+  # ======================
+  security:
+    jwt:
+      key: 'abcdefghijklmn'
+      expire: 72
+      remember-expire: 168
+      limit:
+        base: 10
+        upgrade: 300
+        frequency: 30
+    filter:
+      order: -100
+
+  # ======================
+  # Web 相关
+  # ======================
+  web:
+    verify:
+      mail-limit: 60
+      code-expire: 600
+    flow:
+      period: 3
+      limit: 50
+      block: 30
+    cors:
+      origin: '*'
+      credentials: false
+      methods: '*'
+
+  minio:
+    endpoint: http://192.168.109.129:9000
+    username: minio
+    password: password
+
+  weather:
+    key: 136482f1f2d04948bd90e00cf6850a2e
+    api-host: 'kv487n5dxd.re.qweatherapi.com'
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# ======================
+# Judge0（本地判题）
+# ======================
+judge0:
+  base-url: http://localhost:2358
+  api-key: ''
+
+# ======================
+# AI Assistant
+# ======================
+ai:
+  base-url: https://yunwu.ai/v1
+  api-key: sk-6ImDATCOswdgEEIXdjrtXHBUnTcGnsvpklzAOrGtHXn4z5sA
+  model: gpt-4o-mini/r

@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Oxanium:wght@400;500;600;700&family=Archivo:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+/* color palette from <https://github.com/vuejs/theme> */
+:root {
+  --vt-c-white: #ffffff;
+  --vt-c-white-soft: #f8f8f8;
+  --vt-c-white-mute: #f2f2f2;
+
+  --vt-c-black: #181818;
+  --vt-c-black-soft: #222222;
+  --vt-c-black-mute: #282828;
+
+  --vt-c-indigo: #2c3e50;
+
+  --vt-c-divider-light-1: rgba(60, 60, 60, 0.29);
+  --vt-c-divider-light-2: rgba(60, 60, 60, 0.12);
+  --vt-c-divider-dark-1: rgba(84, 84, 84, 0.65);
+  --vt-c-divider-dark-2: rgba(84, 84, 84, 0.48);
+
+  --vt-c-text-light-1: var(--vt-c-indigo);
+  --vt-c-text-light-2: rgba(60, 60, 60, 0.66);
+  --vt-c-text-dark-1: var(--vt-c-white);
+  --vt-c-text-dark-2: rgba(235, 235, 235, 0.64);
+}
+
+/* semantic color variables for this project */
+:root {
+  --font-body: 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Oxanium', 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --ui-bg: #05090f;
+  --ui-surface: rgba(9, 13, 22, 0.9);
+  --ui-surface-soft: rgba(12, 18, 30, 0.75);
+  --ui-card: rgba(14, 20, 34, 0.78);
+  --ui-text: #eaf2ff;
+  --ui-text-muted: rgba(234, 242, 255, 0.62);
+  --ui-accent: #5ef7c2;
+  --ui-accent-2: #38bdf8;
+  --ui-border: rgba(94, 247, 194, 0.2);
+  --ui-border-soft: rgba(94, 247, 194, 0.12);
+  --color-background: var(--vt-c-white);
+  --color-background-soft: var(--vt-c-white-soft);
+  --color-background-mute: var(--vt-c-white-mute);
+
+  --color-border: var(--vt-c-divider-light-2);
+  --color-border-hover: var(--vt-c-divider-light-1);
+
+  --color-heading: var(--vt-c-text-light-1);
+  --color-text: var(--vt-c-text-light-1);
+
+  --section-gap: 160px;
+
+  /* Element Plus 主题映射，保证不同主题下对比度一致 */
+  --el-text-color-primary: var(--ui-text);
+  --el-text-color-regular: var(--ui-text);
+  --el-text-color-secondary: var(--ui-text-muted);
+  --el-text-color-placeholder: var(--ui-text-muted);
+  --el-border-color: var(--ui-border);
+  --el-border-color-light: var(--ui-border);
+  --el-border-color-lighter: var(--ui-border-soft);
+  --el-bg-color: var(--ui-surface);
+  --el-bg-color-overlay: var(--ui-surface);
+  --el-fill-color-blank: var(--ui-surface);
+  --el-fill-color-light: var(--ui-surface-soft);
+  --el-fill-color-lighter: var(--ui-card);
+  --el-fill-color-extra-light: var(--ui-card);
+  --el-mask-color: rgba(5, 10, 18, 0.6);
+}
+
+:root[data-theme='neon'] {
+  --ui-bg: #05090f;
+  --ui-surface: rgba(9, 13, 22, 0.9);
+  --ui-surface-soft: rgba(12, 18, 30, 0.75);
+  --ui-card: rgba(14, 20, 34, 0.78);
+  --ui-text: #eaf2ff;
+  --ui-text-muted: rgba(234, 242, 255, 0.62);
+  --ui-accent: #5ef7c2;
+  --ui-accent-2: #38bdf8;
+  --ui-border: rgba(94, 247, 194, 0.2);
+  --ui-border-soft: rgba(94, 247, 194, 0.12);
+}
+
+:root[data-theme='red'] {
+  --ui-bg: #12060a;
+  --ui-surface: rgba(24, 10, 14, 0.9);
+  --ui-surface-soft: rgba(30, 12, 18, 0.85);
+  --ui-card: rgba(36, 14, 20, 0.82);
+  --ui-text: #fff1f2;
+  --ui-text-muted: rgba(255, 241, 242, 0.72);
+  --ui-accent: #ff546f;
+  --ui-accent-2: #ffb454;
+  --ui-border: rgba(255, 84, 111, 0.28);
+  --ui-border-soft: rgba(255, 84, 111, 0.18);
+}
+
+:root[data-theme='aurora'] {
+  --ui-bg: #f6f8fb;
+  --ui-surface: #ffffff;
+  --ui-surface-soft: #f8fafc;
+  --ui-card: #ffffff;
+  --ui-text: #0f172a;
+  --ui-text-muted: rgba(71, 85, 105, 0.76);
+  --ui-accent: #0ea5e9;
+  --ui-accent-2: #22c55e;
+  --ui-border: rgba(148, 163, 184, 0.6);
+  --ui-border-soft: rgba(148, 163, 184, 0.35);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: var(--vt-c-black);
+    --color-background-soft: var(--vt-c-black-soft);
+    --color-background-mute: var(--vt-c-black-mute);
+
+    --color-border: var(--vt-c-divider-dark-2);
+    --color-border-hover: var(--vt-c-divider-dark-1);
+
+    --color-heading: var(--vt-c-text-dark-1);
+    --color-text: var(--vt-c-text-dark-2);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  font-weight: normal;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--ui-text);
+  background: var(--ui-bg);
+  transition:
+    color 0.5s,
+    background-color 0.5s;
+  line-height: 1.6;
+  font-family: var(--font-body);
+  font-size: 15px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 修复 Dialog 关闭时闪烁：保留离场动画最终帧 */
+.el-overlay-dialog.dialog-fade-leave-active,
+.dialog-fade-leave-active {
+  animation-fill-mode: forwards !important;
+}
