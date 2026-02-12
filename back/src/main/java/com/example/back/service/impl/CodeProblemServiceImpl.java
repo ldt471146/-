@@ -87,60 +87,72 @@ public class CodeProblemServiceImpl implements CodeProblemService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public CodeSubmitResultVO submit(CodeSubmitRequest request) {
+        long startNs = System.nanoTime();
         Long userId = SecurityUtil.getUserId();
-        if (userId == null) {
-            throw new IllegalArgumentException("未登录");
-        }
-        EduCodeProblem problem = problemMapper.selectById(request.getProblemId());
-        if (problem == null || problem.getStatus() == null || problem.getStatus() != 1) {
-            throw new IllegalArgumentException("题目不存在或已下架");
-        }
-        List<EduCodeTestcase> testcases = testcaseMapper.selectList(new LambdaQueryWrapper<EduCodeTestcase>()
-                .eq(EduCodeTestcase::getProblemId, request.getProblemId())
-                .orderByAsc(EduCodeTestcase::getId));
-        if (testcases.isEmpty()) {
-            throw new IllegalArgumentException("题目未配置测试用例");
-        }
+        try {
+            if (userId == null) {
+                throw new IllegalArgumentException("未登录");
+            }
+            EduCodeProblem problem = problemMapper.selectById(request.getProblemId());
+            if (problem == null || problem.getStatus() == null || problem.getStatus() != 1) {
+                throw new IllegalArgumentException("题目不存在或已下架");
+            }
+            List<EduCodeTestcase> testcases = testcaseMapper.selectList(new LambdaQueryWrapper<EduCodeTestcase>()
+                    .eq(EduCodeTestcase::getProblemId, request.getProblemId())
+                    .orderByAsc(EduCodeTestcase::getId));
+            if (testcases.isEmpty()) {
+                throw new IllegalArgumentException("题目未配置测试用例");
+            }
 
-        List<LocalJudgeClient.TestCaseInput> judgeCases = new ArrayList<>();
-        for (EduCodeTestcase tc : testcases) {
-            LocalJudgeClient.TestCaseInput testCaseInput = new LocalJudgeClient.TestCaseInput();
-            testCaseInput.setInput(tc.getInputData());
-            testCaseInput.setExpectedOutput(tc.getOutputData());
-            judgeCases.add(testCaseInput);
+            List<LocalJudgeClient.TestCaseInput> judgeCases = new ArrayList<>();
+            for (EduCodeTestcase tc : testcases) {
+                LocalJudgeClient.TestCaseInput testCaseInput = new LocalJudgeClient.TestCaseInput();
+                testCaseInput.setInput(tc.getInputData());
+                testCaseInput.setExpectedOutput(tc.getOutputData());
+                judgeCases.add(testCaseInput);
+            }
+            LocalJudgeClient.JudgeOutcome outcome = localJudgeClient.judgeAll(
+                    request.getSourceCode(),
+                    request.getLanguageId(),
+                    judgeCases
+            );
+            int passed = outcome.getPassed() == null ? 0 : outcome.getPassed();
+            int total = outcome.getTotal() == null ? 0 : outcome.getTotal();
+            List<String> messages = outcome.getMessages() == null ? List.of() : outcome.getMessages();
+            String result = normalizeResult(outcome.getResult());
+
+            EduCodeSubmission submission = new EduCodeSubmission();
+            submission.setUserId(userId);
+            submission.setProblemId(request.getProblemId());
+            submission.setLanguageId(request.getLanguageId());
+            submission.setSourceCode(request.getSourceCode());
+            submission.setResult(result);
+            submission.setPassedCount(passed);
+            submission.setTotalCount(total);
+            submissionMapper.insert(submission);
+            log.info("code submission: userId={}, problemId={}, result={}, passed={}/{}",
+                    userId, request.getProblemId(), result, passed, total);
+
+            CodeSubmitResultVO vo = new CodeSubmitResultVO();
+            vo.setProblemId(request.getProblemId());
+            vo.setResult(result);
+            vo.setResultLabel(resultLabel(result));
+            vo.setErrorType(errorType(result));
+            vo.setFailedCaseIndex(outcome.getFailedCaseIndex());
+            vo.setPassed(passed);
+            vo.setTotal(total);
+            vo.setMessages(messages);
+            return vo;
+        } finally {
+            long elapsedMs = (System.nanoTime() - startNs) / 1_000_000;
+            if (elapsedMs > 3000) {
+                log.warn("perf.slow codeSubmit userId={}, problemId={}, costMs={}",
+                        userId, request.getProblemId(), elapsedMs);
+            } else {
+                log.info("perf codeSubmit userId={}, problemId={}, costMs={}",
+                        userId, request.getProblemId(), elapsedMs);
+            }
         }
-        LocalJudgeClient.JudgeOutcome outcome = localJudgeClient.judgeAll(
-                request.getSourceCode(),
-                request.getLanguageId(),
-                judgeCases
-        );
-        int passed = outcome.getPassed() == null ? 0 : outcome.getPassed();
-        int total = outcome.getTotal() == null ? 0 : outcome.getTotal();
-        List<String> messages = outcome.getMessages() == null ? List.of() : outcome.getMessages();
-        String result = normalizeResult(outcome.getResult());
-
-        EduCodeSubmission submission = new EduCodeSubmission();
-        submission.setUserId(userId);
-        submission.setProblemId(request.getProblemId());
-        submission.setLanguageId(request.getLanguageId());
-        submission.setSourceCode(request.getSourceCode());
-        submission.setResult(result);
-        submission.setPassedCount(passed);
-        submission.setTotalCount(total);
-        submissionMapper.insert(submission);
-        log.info("code submission: userId={}, problemId={}, result={}, passed={}/{}",
-                userId, request.getProblemId(), result, passed, total);
-
-        CodeSubmitResultVO vo = new CodeSubmitResultVO();
-        vo.setProblemId(request.getProblemId());
-        vo.setResult(result);
-        vo.setResultLabel(resultLabel(result));
-        vo.setErrorType(errorType(result));
-        vo.setFailedCaseIndex(outcome.getFailedCaseIndex());
-        vo.setPassed(passed);
-        vo.setTotal(total);
-        vo.setMessages(messages);
-        return vo;
     }
 
     private String normalizeResult(String raw) {

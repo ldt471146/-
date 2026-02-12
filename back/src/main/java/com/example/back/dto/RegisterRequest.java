@@ -2,6 +2,7 @@ package com.example.back.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -37,6 +38,12 @@ public class RegisterRequest {
      */
     @NotBlank(message = "验证码不能为空")
     private String code;
+
+    /**
+     * 学生注册需填写家长手机号（仅数字）
+     */
+    @Pattern(regexp = "^$|^[0-9]{6,20}$", message = "家长手机号格式不正确")
+    private String parentPhone;
 
     /**
      * 角色（可选）：STUDENT/TEACHER

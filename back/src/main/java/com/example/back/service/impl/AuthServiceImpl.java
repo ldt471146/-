@@ -99,13 +99,6 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("邮箱已被注册");
         }
 
-        SysUser user = new SysUser();
-        user.setEmail(request.getEmail());
-        user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setStatus(1);
-        sysUserMapper.insert(user);
-
         String roleCode = request.getRoleCode();
         if (roleCode == null || roleCode.isBlank()) {
             roleCode = DEFAULT_ROLE_CODE;
@@ -113,6 +106,22 @@ public class AuthServiceImpl implements AuthService {
         if (!DEFAULT_ROLE_CODE.equals(roleCode) && !TEACHER_ROLE_CODE.equals(roleCode)) {
             throw new IllegalArgumentException("角色非法");
         }
+        if (DEFAULT_ROLE_CODE.equals(roleCode)) {
+            String parentPhone = request.getParentPhone() == null ? "" : request.getParentPhone().trim();
+            if (parentPhone.isBlank()) {
+                throw new IllegalArgumentException("学生注册需填写家长手机号");
+            }
+        }
+
+        SysUser user = new SysUser();
+        user.setEmail(request.getEmail());
+        user.setUsername(request.getUsername());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setStatus(1);
+        if (DEFAULT_ROLE_CODE.equals(roleCode)) {
+            user.setPhone(request.getParentPhone().trim());
+        }
+        sysUserMapper.insert(user);
 
         if (TEACHER_ROLE_CODE.equals(roleCode)) {
             Long count = teacherApplyMapper.selectCount(

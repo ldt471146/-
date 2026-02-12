@@ -8,6 +8,7 @@ import com.example.back.entity.EduCourse;
 import com.example.back.entity.SysUser;
 import com.example.back.mapper.EduCourseMapper;
 import com.example.back.mapper.SysUserMapper;
+import com.example.back.service.AuditLogService;
 import com.example.back.vo.AdminCourseVO;
 import com.example.back.vo.PageResultVO;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,10 +29,14 @@ public class AdminCourseController {
 
     private final EduCourseMapper courseMapper;
     private final SysUserMapper userMapper;
+    private final AuditLogService auditLogService;
 
-    public AdminCourseController(EduCourseMapper courseMapper, SysUserMapper userMapper) {
+    public AdminCourseController(EduCourseMapper courseMapper,
+                                 SysUserMapper userMapper,
+                                 AuditLogService auditLogService) {
         this.courseMapper = courseMapper;
         this.userMapper = userMapper;
+        this.auditLogService = auditLogService;
     }
 
     @GetMapping
@@ -89,7 +94,13 @@ public class AdminCourseController {
         }
         course.setStatus(request.getStatus());
         courseMapper.updateById(course);
+        auditLogService.log(
+                "COURSE_REVIEW",
+                request.getStatus() == 1 ? "APPROVE" : "REJECT",
+                "COURSE",
+                id,
+                "课程审核状态变更为: " + request.getStatus()
+        );
         return ApiResponse.ok();
     }
 }
-

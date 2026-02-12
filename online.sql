@@ -684,6 +684,87 @@ CREATE TABLE `oj_submission`  (
 -- ----------------------------
 -- Table structure for sys_notice
 -- ----------------------------
+DROP TABLE IF EXISTS `community_post`;
+CREATE TABLE `community_post`  (
+  `id` bigint(0) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(0) NOT NULL,
+  `title` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `code_snippet` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
+  `status` tinyint(0) NOT NULL DEFAULT 1,
+  `best_reply_id` bigint(0) NULL DEFAULT NULL,
+  `view_count` int(0) NOT NULL DEFAULT 0,
+  `last_reply_at` datetime(0) NULL DEFAULT NULL,
+  `created_at` datetime(0) NOT NULL,
+  `updated_at` datetime(0) NOT NULL,
+  `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_community_post_user`(`user_id`) USING BTREE,
+  INDEX `idx_community_post_status`(`status`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for community_reply
+-- ----------------------------
+DROP TABLE IF EXISTS `community_reply`;
+CREATE TABLE `community_reply`  (
+  `id` bigint(0) NOT NULL AUTO_INCREMENT,
+  `post_id` bigint(0) NOT NULL,
+  `user_id` bigint(0) NOT NULL,
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `code_snippet` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
+  `is_best` tinyint(0) NOT NULL DEFAULT 0,
+  `status` tinyint(0) NOT NULL DEFAULT 1,
+  `created_at` datetime(0) NOT NULL,
+  `updated_at` datetime(0) NOT NULL,
+  `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_community_reply_post`(`post_id`) USING BTREE,
+  INDEX `idx_community_reply_user`(`user_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for community_moderation
+-- ----------------------------
+DROP TABLE IF EXISTS `community_moderation`;
+CREATE TABLE `community_moderation`  (
+  `id` bigint(0) NOT NULL AUTO_INCREMENT,
+  `target_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `target_id` bigint(0) NOT NULL,
+  `action` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `operator_id` bigint(0) NOT NULL,
+  `created_at` datetime(0) NOT NULL,
+  `updated_at` datetime(0) NOT NULL,
+  `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_community_moderation_target`(`target_type`, `target_id`) USING BTREE,
+  INDEX `idx_community_moderation_operator`(`operator_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for sys_audit_log
+-- ----------------------------
+DROP TABLE IF EXISTS `sys_audit_log`;
+CREATE TABLE `sys_audit_log`  (
+  `id` bigint(0) NOT NULL AUTO_INCREMENT,
+  `module` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `action` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `target_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `target_id` bigint(0) NULL DEFAULT NULL,
+  `operator_id` bigint(0) NULL DEFAULT NULL,
+  `detail` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
+  `created_at` datetime(0) NOT NULL,
+  `updated_at` datetime(0) NOT NULL,
+  `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_audit_module_action`(`module`, `action`) USING BTREE,
+  INDEX `idx_audit_target`(`target_type`, `target_id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for sys_notice
+-- ----------------------------
 DROP TABLE IF EXISTS `sys_notice`;
 CREATE TABLE `sys_notice`  (
   `id` bigint(0) NOT NULL AUTO_INCREMENT,

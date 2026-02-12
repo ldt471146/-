@@ -27,6 +27,7 @@ import com.example.back.vo.ExamSubmitVO;
 import com.example.back.vo.QuestionOptionVO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -49,6 +50,7 @@ import java.util.stream.Collectors;
  * 模拟考试服务实现
  */
 @Service
+@Slf4j
 public class ExamServiceImpl implements ExamService {
 
     private static final String EXAM_KEY_PREFIX = "exam:mock:";
@@ -185,70 +187,82 @@ public class ExamServiceImpl implements ExamService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ExamSubmitVO submitMockExam(ExamSubmitRequest request) {
+        long startNs = System.nanoTime();
         Long userId = requireUserId();
-        MockExamSnapshot snapshot = getSnapshot(request.getExamId());
-        if (snapshot == null) {
-            throw new IllegalArgumentException("考试不存在或已过期，请重新开始");
-        }
-        if (!userId.equals(snapshot.getUserId())) {
-            throw new IllegalArgumentException("无权限提交该考试");
-        }
+        try {
+            MockExamSnapshot snapshot = getSnapshot(request.getExamId());
+            if (snapshot == null) {
+                throw new IllegalArgumentException("考试不存在或已过期，请重新开始");
+            }
+            if (!userId.equals(snapshot.getUserId())) {
+                throw new IllegalArgumentException("无权限提交该考试");
+            }
 
-        Map<Long, List<String>> userAnswerMap = new HashMap<>();
-        if (request.getAnswers() != null) {
-            for (ExamAnswerItemRequest item : request.getAnswers()) {
-                if (item == null || item.getQuestionId() == null) {
-                    continue;
+            Map<Long, List<String>> userAnswerMap = new HashMap<>();
+            if (request.getAnswers() != null) {
+                for (ExamAnswerItemRequest item : request.getAnswers()) {
+                    if (item == null || item.getQuestionId() == null) {
+                        continue;
+                    }
+                    userAnswerMap.put(item.getQuestionId(), normalizeAnswers(item.getAnswers()));
                 }
-                userAnswerMap.put(item.getQuestionId(), normalizeAnswers(item.getAnswers()));
+            }
+
+            int correctCount = 0;
+            List<ExamQuestionResultVO> resultList = new ArrayList<>();
+            for (Long questionId : snapshot.getQuestionIds()) {
+                List<String> userAnswers = userAnswerMap.getOrDefault(questionId, List.of());
+                List<String> correctAnswers = snapshot.getCorrectAnswerMap().getOrDefault(questionId, List.of());
+                boolean correct = correctAnswers.equals(userAnswers);
+                if (correct) {
+                    correctCount++;
+                }
+                persistRecord(userId, questionId, userAnswers, correct);
+
+                ExamQuestionResultVO item = new ExamQuestionResultVO();
+                item.setQuestionId(questionId);
+                item.setTitle(snapshot.getTitleMap().getOrDefault(questionId, "-"));
+                item.setCorrect(correct);
+                item.setUserAnswers(userAnswers);
+                item.setCorrectAnswers(correctAnswers);
+                item.setAnalysis(snapshot.getAnalysisMap().getOrDefault(questionId, ""));
+                resultList.add(item);
+            }
+
+            int total = snapshot.getQuestionIds().size();
+            int score = total == 0 ? 0 : (int) Math.round(correctCount * 100.0 / total);
+
+            if (snapshot.getTaskId() != null) {
+                EduExamSubmission submission = new EduExamSubmission();
+                submission.setTaskId(snapshot.getTaskId());
+                submission.setUserId(userId);
+                submission.setTotalCount(total);
+                submission.setCorrectCount(correctCount);
+                submission.setScore(score);
+                submission.setSubmittedAt(LocalDateTime.now());
+                submission.setDetailJson(toJson(resultList));
+                submissionMapper.insert(submission);
+            }
+
+            removeSnapshot(snapshot.getExamId());
+
+            ExamSubmitVO vo = new ExamSubmitVO();
+            vo.setTotal(total);
+            vo.setCorrectCount(correctCount);
+            vo.setWrongCount(total - correctCount);
+            vo.setScore(score);
+            vo.setResults(resultList);
+            return vo;
+        } finally {
+            long elapsedMs = (System.nanoTime() - startNs) / 1_000_000;
+            if (elapsedMs > 3000) {
+                log.warn("perf.slow examSubmit userId={}, examId={}, costMs={}",
+                        userId, request.getExamId(), elapsedMs);
+            } else {
+                log.info("perf examSubmit userId={}, examId={}, costMs={}",
+                        userId, request.getExamId(), elapsedMs);
             }
         }
-
-        int correctCount = 0;
-        List<ExamQuestionResultVO> resultList = new ArrayList<>();
-        for (Long questionId : snapshot.getQuestionIds()) {
-            List<String> userAnswers = userAnswerMap.getOrDefault(questionId, List.of());
-            List<String> correctAnswers = snapshot.getCorrectAnswerMap().getOrDefault(questionId, List.of());
-            boolean correct = correctAnswers.equals(userAnswers);
-            if (correct) {
-                correctCount++;
-            }
-            persistRecord(userId, questionId, userAnswers, correct);
-
-            ExamQuestionResultVO item = new ExamQuestionResultVO();
-            item.setQuestionId(questionId);
-            item.setTitle(snapshot.getTitleMap().getOrDefault(questionId, "-"));
-            item.setCorrect(correct);
-            item.setUserAnswers(userAnswers);
-            item.setCorrectAnswers(correctAnswers);
-            item.setAnalysis(snapshot.getAnalysisMap().getOrDefault(questionId, ""));
-            resultList.add(item);
-        }
-
-        int total = snapshot.getQuestionIds().size();
-        int score = total == 0 ? 0 : (int) Math.round(correctCount * 100.0 / total);
-
-        if (snapshot.getTaskId() != null) {
-            EduExamSubmission submission = new EduExamSubmission();
-            submission.setTaskId(snapshot.getTaskId());
-            submission.setUserId(userId);
-            submission.setTotalCount(total);
-            submission.setCorrectCount(correctCount);
-            submission.setScore(score);
-            submission.setSubmittedAt(LocalDateTime.now());
-            submission.setDetailJson(toJson(resultList));
-            submissionMapper.insert(submission);
-        }
-
-        removeSnapshot(snapshot.getExamId());
-
-        ExamSubmitVO vo = new ExamSubmitVO();
-        vo.setTotal(total);
-        vo.setCorrectCount(correctCount);
-        vo.setWrongCount(total - correctCount);
-        vo.setScore(score);
-        vo.setResults(resultList);
-        return vo;
     }
 
     private ExamQuestionVO toExamQuestionVO(EduQuestion question, List<EduQuestionOption> options) {
