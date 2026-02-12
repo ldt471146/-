@@ -16,6 +16,7 @@ import com.example.back.util.JwtUtil;
 import com.example.back.vo.AuthVO;
 import com.example.back.vo.UserVO;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.beans.factory.annotation.Value;
@@ -69,7 +70,7 @@ public class AuthServiceImpl implements AuthService {
                            com.example.back.mapper.SysTeacherApplyMapper teacherApplyMapper,
                            com.example.back.mapper.SysNoticeMapper noticeMapper,
                            com.example.back.mapper.SysNoticeUserMapper noticeUserMapper,
-                           @Value("${spring.mail.username}") String mailFrom) {
+                           @Value("${spring.mail.from:${spring.mail.username:}}") String mailFrom) {
         this.sysUserMapper = sysUserMapper;
         this.sysRoleMapper = sysRoleMapper;
         this.sysUserRoleMapper = sysUserRoleMapper;
@@ -204,14 +205,12 @@ public class AuthServiceImpl implements AuthService {
         if (Boolean.TRUE.equals(hasCooldown)) {
             throw new IllegalArgumentException("发送过于频繁，请稍后再试");
         }
+        if (mailFrom == null || mailFrom.isBlank()) {
+            throw new IllegalArgumentException("邮件服务未配置发件人，请设置 MAIL_USERNAME");
+        }
 
         String code = String.valueOf(ThreadLocalRandom.current().nextInt(100000, 1000000));
         String codeKey = CODE_KEY_PREFIX + email;
-
-        stringRedisTemplate.opsForValue().set(codeKey, code,
-                verifyProperties.getCodeExpire(), TimeUnit.SECONDS);
-        stringRedisTemplate.opsForValue().set(cooldownKey, "1",
-                verifyProperties.getMailLimit(), TimeUnit.SECONDS);
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(mailFrom);
@@ -219,7 +218,16 @@ public class AuthServiceImpl implements AuthService {
         message.setSubject("青少年编程平台验证码");
         message.setText("你的验证码是：" + code + "，有效期 " +
                 (verifyProperties.getCodeExpire() / 60) + " 分钟，请勿泄露。");
-        mailSender.send(message);
+        try {
+            mailSender.send(message);
+        } catch (MailException ex) {
+            throw new IllegalArgumentException("邮件发送失败，请检查邮箱配置与授权码");
+        }
+
+        stringRedisTemplate.opsForValue().set(codeKey, code,
+                verifyProperties.getCodeExpire(), TimeUnit.SECONDS);
+        stringRedisTemplate.opsForValue().set(cooldownKey, "1",
+                verifyProperties.getMailLimit(), TimeUnit.SECONDS);
     }
 
     private AuthVO buildAuthVO(String token, SysUser user, List<String> roles) {

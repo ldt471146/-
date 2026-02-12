@@ -12,6 +12,7 @@
 1. 数据库：`DB_URL`、`DB_USERNAME`、`DB_PASSWORD`
 2. JWT：`JWT_KEY`
 3. 邮箱发送验证码：`MAIL_USERNAME`、`MAIL_PASSWORD`（163 邮箱授权码）
+4. 邮件发件人：`MAIL_FROM`（可不填，默认等于 `MAIL_USERNAME`）
 
 ## 可选配置
 
