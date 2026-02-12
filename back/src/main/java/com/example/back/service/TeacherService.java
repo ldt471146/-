@@ -4,6 +4,7 @@ import com.example.back.dto.TeacherChapterRequest;
 import com.example.back.dto.TeacherCourseRequest;
 import com.example.back.dto.TeacherQuestionImportRequest;
 import com.example.back.dto.TeacherLessonRequest;
+import com.example.back.dto.TeacherCodeProblemRequest;
 import com.example.back.dto.TeacherQuestionRequest;
 import com.example.back.vo.CourseDetailVO;
 import com.example.back.vo.PageResultVO;
@@ -48,4 +49,12 @@ public interface TeacherService {
     void deleteQuestion(Long id);
 
     int importQuestions(TeacherQuestionImportRequest request);
+
+    PageResultVO<com.example.back.vo.TeacherCodeProblemVO> listCodeProblems(Long courseId, Long chapterId, long page, long size);
+
+    Long createCodeProblem(TeacherCodeProblemRequest request);
+
+    void updateCodeProblem(Long id, TeacherCodeProblemRequest request);
+
+    void deleteCodeProblem(Long id);
 }

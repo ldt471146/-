@@ -2,11 +2,15 @@
 import { computed, onMounted, ref } from 'vue'
 import {
   createTeacherQuestion,
+  createTeacherCodeProblem,
   deleteTeacherQuestion,
+  deleteTeacherCodeProblem,
   fetchTeacherCourseDetail,
+  fetchTeacherCodeProblems,
   fetchTeacherCourses,
   fetchTeacherQuestions,
   importTeacherQuestions,
+  updateTeacherCodeProblem,
   updateTeacherQuestion
 } from '../api/teacher'
 import { ElNotification } from 'element-plus'
@@ -25,6 +29,24 @@ const importOpen = ref(false)
 const saving = ref(false)
 const importing = ref(false)
 const editingId = ref(null)
+const codeProblems = ref([])
+const codeDialogOpen = ref(false)
+const codeSaving = ref(false)
+const codeEditingId = ref(null)
+const codeForm = ref({
+  title: '',
+  content: '',
+  difficulty: 1,
+  timeLimit: 1000,
+  memoryLimit: 256,
+  status: 1,
+  courseId: '',
+  chapterId: '',
+  testcases: [
+    { inputData: '', outputData: '', isSample: 1 },
+    { inputData: '', outputData: '', isSample: 0 }
+  ]
+})
 const form = ref({
   title: '',
   type: 'single',
@@ -95,6 +117,29 @@ const load = async () => {
   }
 }
 
+const loadCodeProblems = async () => {
+  if (!courseId.value) return
+  loading.value = true
+  try {
+    const res = await fetchTeacherCodeProblems({
+      courseId: courseId.value,
+      chapterId: chapterId.value || undefined,
+      page: page.value,
+      size: size.value
+    })
+    codeProblems.value = res.data?.records || []
+  } catch (e) {
+    ElNotification({
+      title: '加载失败',
+      message: e?.message || '编程题加载失败',
+      type: 'error',
+      duration: 2000
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
 const openCreate = () => {
   editingId.value = null
   form.value = {
@@ -116,6 +161,25 @@ const openCreate = () => {
 
 const openImport = () => {
   importOpen.value = true
+}
+
+const openCodeCreate = () => {
+  codeEditingId.value = null
+  codeForm.value = {
+    title: '',
+    content: '',
+    difficulty: 1,
+    timeLimit: 1000,
+    memoryLimit: 256,
+    status: 1,
+    courseId: courseId.value,
+    chapterId: chapterId.value || '',
+    testcases: [
+      { inputData: '', outputData: '', isSample: 1 },
+      { inputData: '', outputData: '', isSample: 0 }
+    ]
+  }
+  codeDialogOpen.value = true
 }
 
 const closeImport = () => {
@@ -144,6 +208,28 @@ const openEdit = (row) => {
   dialogOpen.value = true
 }
 
+const openCodeEdit = (row) => {
+  codeEditingId.value = row.id
+  codeForm.value = {
+    title: row.title,
+    content: row.content || '',
+    difficulty: row.difficulty || 1,
+    timeLimit: row.timeLimit || 1000,
+    memoryLimit: row.memoryLimit || 256,
+    status: row.status == null ? 1 : row.status,
+    courseId: row.courseId,
+    chapterId: row.chapterId || '',
+    testcases: (row.testcases && row.testcases.length ? row.testcases : [
+      { inputData: '', outputData: '', isSample: 1 }
+    ]).map(t => ({
+      inputData: t.inputData || '',
+      outputData: t.outputData || '',
+      isSample: t.isSample || 0
+    }))
+  }
+  codeDialogOpen.value = true
+}
+
 const saveQuestion = async () => {
   if (saving.value) return
   if (!form.value.title || !form.value.courseId) {
@@ -163,6 +249,43 @@ const saveQuestion = async () => {
     ElNotification({ title: '保存失败', message: e?.message || '请稍后再试', type: 'error', duration: 2000 })
   } finally {
     saving.value = false
+  }
+}
+
+const addCodeTestcase = () => {
+  codeForm.value.testcases.push({ inputData: '', outputData: '', isSample: 0 })
+}
+
+const removeCodeTestcase = (idx) => {
+  if (codeForm.value.testcases.length <= 1) return
+  codeForm.value.testcases.splice(idx, 1)
+}
+
+const saveCodeProblem = async () => {
+  if (codeSaving.value) return
+  if (!codeForm.value.title || !codeForm.value.courseId) {
+    ElNotification({ title: '请完善编程题', type: 'warning', duration: 1500 })
+    return
+  }
+  const validCases = (codeForm.value.testcases || []).filter(t => (t.inputData || '').trim() !== '' || (t.outputData || '').trim() !== '')
+  if (!validCases.length) {
+    ElNotification({ title: '请至少填写一组测试用例', type: 'warning', duration: 1500 })
+    return
+  }
+  const payload = { ...codeForm.value, testcases: validCases }
+  codeSaving.value = true
+  try {
+    if (codeEditingId.value) {
+      await updateTeacherCodeProblem(codeEditingId.value, payload)
+    } else {
+      await createTeacherCodeProblem(payload)
+    }
+    codeDialogOpen.value = false
+    await loadCodeProblems()
+  } catch (e) {
+    ElNotification({ title: '保存失败', message: e?.message || '请稍后再试', type: 'error', duration: 2000 })
+  } finally {
+    codeSaving.value = false
   }
 }
 
@@ -217,21 +340,33 @@ const removeQuestion = async (row) => {
   }
 }
 
+const removeCodeProblem = async (row) => {
+  try {
+    await deleteTeacherCodeProblem(row.id)
+    await loadCodeProblems()
+  } catch (e) {
+    ElNotification({ title: '删除失败', message: e?.message || '请稍后再试', type: 'error', duration: 2000 })
+  }
+}
+
 const onCourseChange = async () => {
   chapterId.value = ''
   await loadChapters()
   await load()
+  await loadCodeProblems()
 }
 
 const onPageChange = async (p) => {
   page.value = p
   await load()
+  await loadCodeProblems()
 }
 
 const onSizeChange = async (s) => {
   size.value = s
   page.value = 1
   await load()
+  await loadCodeProblems()
 }
 
 const toggleCorrect = (opt) => {
@@ -249,6 +384,7 @@ onMounted(async () => {
   await loadCourses()
   await loadChapters()
   await load()
+  await loadCodeProblems()
 })
 </script>
 
@@ -257,11 +393,12 @@ onMounted(async () => {
     <div class="hero">
       <div>
         <div class="title display">题库管理</div>
-        <div class="subtitle">为课程建立题库，支持自动判题</div>
+        <div class="subtitle">客观题 + 编程题一体化管理</div>
       </div>
       <div class="actions">
         <el-button native-type="button" @click="openImport">批量导入</el-button>
         <el-button native-type="button" type="primary" @click="openCreate">新建题目</el-button>
+        <el-button native-type="button" type="success" @click="openCodeCreate">新建编程题</el-button>
       </div>
     </div>
 
@@ -287,6 +424,29 @@ onMounted(async () => {
         </template>
       </el-table-column>
     </el-table>
+
+    <el-card class="code-card">
+      <template #header>
+        <div class="code-head">
+          <span>编程题（融入题库）</span>
+          <span class="code-sub">老师可直接发放代码提交题</span>
+        </div>
+      </template>
+      <el-table :data="codeProblems" class="table">
+        <el-table-column label="题目标题" prop="title" min-width="260" />
+        <el-table-column label="难度" prop="difficulty" width="80" />
+        <el-table-column label="时限(ms)" prop="timeLimit" width="100" />
+        <el-table-column label="状态" width="90">
+          <template #default="scope">{{ scope.row.status === 1 ? '上架' : '下架' }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="180">
+          <template #default="scope">
+            <el-button native-type="button" size="small" @click="openCodeEdit(scope.row)">编辑</el-button>
+            <el-button native-type="button" size="small" type="danger" @click="removeCodeProblem(scope.row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
 
     <div class="pager">
       <el-pagination
@@ -381,6 +541,73 @@ onMounted(async () => {
         <el-button native-type="button" type="primary" :loading="importing" @click="submitImport">开始导入</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog
+      v-model="codeDialogOpen"
+      title="编程题"
+      width="860px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      :show-close="true"
+      append-to-body
+      destroy-on-close
+    >
+      <el-form label-width="90">
+        <el-form-item label="课程">
+          <el-select v-model="codeForm.courseId" class="filter">
+            <el-option v-for="c in courses" :key="c.id" :label="c.title" :value="c.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="章节">
+          <el-select v-model="codeForm.chapterId" clearable class="filter">
+            <el-option v-for="c in chapters" :key="c.id" :label="c.title" :value="c.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="题目标题">
+          <el-input v-model="codeForm.title" placeholder="题目标题" />
+        </el-form-item>
+        <el-form-item label="题目描述">
+          <el-input v-model="codeForm.content" type="textarea" :rows="4" placeholder="输入题目描述、输入输出要求" />
+        </el-form-item>
+        <el-form-item label="参数">
+          <div class="code-grid">
+            <el-select v-model="codeForm.difficulty">
+              <el-option label="简单" :value="1" />
+              <el-option label="中等" :value="2" />
+              <el-option label="困难" :value="3" />
+            </el-select>
+            <el-input-number v-model="codeForm.timeLimit" :min="100" :max="10000" :step="100" />
+            <el-input-number v-model="codeForm.memoryLimit" :min="64" :max="1024" :step="64" />
+            <el-select v-model="codeForm.status">
+              <el-option label="上架" :value="1" />
+              <el-option label="下架" :value="0" />
+            </el-select>
+          </div>
+        </el-form-item>
+        <el-form-item label="测试用例">
+          <div class="tc-wrap">
+            <div v-for="(tc, idx) in codeForm.testcases" :key="idx" class="tc-item">
+              <div class="tc-top">
+                <span>用例 {{ idx + 1 }}</span>
+                <div class="tc-actions">
+                  <el-checkbox v-model="tc.isSample" :true-label="1" :false-label="0">样例</el-checkbox>
+                  <el-button native-type="button" size="small" type="danger" @click="removeCodeTestcase(idx)">删除</el-button>
+                </div>
+              </div>
+              <div class="tc-grid">
+                <el-input v-model="tc.inputData" type="textarea" :rows="3" placeholder="输入" />
+                <el-input v-model="tc.outputData" type="textarea" :rows="3" placeholder="输出" />
+              </div>
+            </div>
+            <el-button native-type="button" @click="addCodeTestcase">新增用例</el-button>
+          </div>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button native-type="button" @click="codeDialogOpen = false">取消</el-button>
+        <el-button native-type="button" type="primary" :loading="codeSaving" @click="saveCodeProblem">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -453,6 +680,60 @@ onMounted(async () => {
   font-size: 12px;
   color: var(--ui-text-muted);
   margin-bottom: 8px;
+}
+
+.code-card {
+  border-radius: 14px;
+}
+
+.code-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.code-sub {
+  font-size: 12px;
+  color: var(--ui-text-muted);
+}
+
+.code-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+}
+
+.tc-wrap {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+.tc-item {
+  border: 1px solid var(--ui-border-soft);
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.tc-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tc-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tc-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr 1fr;
 }
 
 </style>

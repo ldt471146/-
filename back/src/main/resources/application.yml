@@ -108,16 +108,25 @@ mybatis-plus:
       logic-not-delete-value: 0
 
 # ======================
-# Judge0（本地判题）
+# 本地判题配置
 # ======================
-judge0:
-  base-url: http://localhost:2358
-  api-key: ''
+local-judge:
+  timeout-ms: 3000
+  max-output-length: 20000
+  # Windows 常见可改为: py / gcc / g++
+  # Linux 常见可改为: python3 / gcc / g++
+  python-command: python
+  gcc-command: gcc
+  gpp-command: g++
 
 # ======================
 # AI Assistant
 # ======================
 ai:
   base-url: https://yunwu.ai/v1
-  api-key: sk-6ImDATCOswdgEEIXdjrtXHBUnTcGnsvpklzAOrGtHXn4z5sA
-  model: gpt-4o-mini/r
+  api-key: sk-MjqazUz9QAJWLvRXMSH6yHyRzdr5w5XJelTYEXgPT2CQrWd7
+
+  model: gpt-4o-mini
+  fallback-models:
+    - gpt-4.1-mini
+    - gpt-4o

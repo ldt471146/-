@@ -17,6 +17,21 @@ public class EduCodeProblem extends BaseEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    /**
+     * 归属教师
+     */
+    private Long teacherId;
+
+    /**
+     * 归属课程
+     */
+    private Long courseId;
+
+    /**
+     * 归属章节
+     */
+    private Long chapterId;
+
     private String title;
 
     /**

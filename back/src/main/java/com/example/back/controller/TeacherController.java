@@ -5,6 +5,7 @@ import com.example.back.dto.TeacherChapterRequest;
 import com.example.back.dto.TeacherCourseRequest;
 import com.example.back.dto.TeacherQuestionImportRequest;
 import com.example.back.dto.TeacherLessonRequest;
+import com.example.back.dto.TeacherCodeProblemRequest;
 import com.example.back.dto.TeacherQuestionRequest;
 import com.example.back.service.TeacherService;
 import com.example.back.vo.CourseDetailVO;
@@ -127,5 +128,32 @@ public class TeacherController {
     @PostMapping("/questions/import")
     public ApiResponse<Integer> importQuestions(@Valid @RequestBody TeacherQuestionImportRequest request) {
         return ApiResponse.ok(teacherService.importQuestions(request));
+    }
+
+    @GetMapping("/code-problems")
+    public ApiResponse<PageResultVO<com.example.back.vo.TeacherCodeProblemVO>> listCodeProblems(
+            @RequestParam("courseId") Long courseId,
+            @RequestParam(value = "chapterId", required = false) Long chapterId,
+            @RequestParam(value = "page", defaultValue = "1") long page,
+            @RequestParam(value = "size", defaultValue = "10") long size) {
+        return ApiResponse.ok(teacherService.listCodeProblems(courseId, chapterId, page, size));
+    }
+
+    @PostMapping("/code-problems")
+    public ApiResponse<Long> createCodeProblem(@RequestBody TeacherCodeProblemRequest request) {
+        return ApiResponse.ok(teacherService.createCodeProblem(request));
+    }
+
+    @PutMapping("/code-problems/{id}")
+    public ApiResponse<Void> updateCodeProblem(@PathVariable("id") Long id,
+                                               @RequestBody TeacherCodeProblemRequest request) {
+        teacherService.updateCodeProblem(id, request);
+        return ApiResponse.ok();
+    }
+
+    @DeleteMapping("/code-problems/{id}")
+    public ApiResponse<Void> deleteCodeProblem(@PathVariable("id") Long id) {
+        teacherService.deleteCodeProblem(id);
+        return ApiResponse.ok();
     }
 }

@@ -9,6 +9,9 @@ import com.example.back.entity.EduExamSubmission;
 import com.example.back.entity.EduExamTask;
 import com.example.back.entity.EduExamTaskQuestion;
 import com.example.back.entity.EduQuestion;
+import com.example.back.entity.SysNotice;
+import com.example.back.entity.SysNoticeUser;
+import com.example.back.entity.SysUser;
 import com.example.back.mapper.EduChapterMapper;
 import com.example.back.mapper.EduCourseEnrollMapper;
 import com.example.back.mapper.EduCourseMapper;
@@ -16,6 +19,9 @@ import com.example.back.mapper.EduExamSubmissionMapper;
 import com.example.back.mapper.EduExamTaskMapper;
 import com.example.back.mapper.EduExamTaskQuestionMapper;
 import com.example.back.mapper.EduQuestionMapper;
+import com.example.back.mapper.SysNoticeMapper;
+import com.example.back.mapper.SysNoticeUserMapper;
+import com.example.back.mapper.SysUserMapper;
 import com.example.back.service.ExamTaskService;
 import com.example.back.util.SecurityUtil;
 import com.example.back.vo.ExamSubmissionVO;
@@ -45,6 +51,9 @@ public class ExamTaskServiceImpl implements ExamTaskService {
     private final EduChapterMapper chapterMapper;
     private final EduQuestionMapper questionMapper;
     private final EduCourseEnrollMapper enrollMapper;
+    private final SysNoticeMapper noticeMapper;
+    private final SysNoticeUserMapper noticeUserMapper;
+    private final SysUserMapper userMapper;
 
     public ExamTaskServiceImpl(EduExamTaskMapper taskMapper,
                                EduExamTaskQuestionMapper taskQuestionMapper,
@@ -52,7 +61,10 @@ public class ExamTaskServiceImpl implements ExamTaskService {
                                EduCourseMapper courseMapper,
                                EduChapterMapper chapterMapper,
                                EduQuestionMapper questionMapper,
-                               EduCourseEnrollMapper enrollMapper) {
+                               EduCourseEnrollMapper enrollMapper,
+                               SysNoticeMapper noticeMapper,
+                               SysNoticeUserMapper noticeUserMapper,
+                               SysUserMapper userMapper) {
         this.taskMapper = taskMapper;
         this.taskQuestionMapper = taskQuestionMapper;
         this.submissionMapper = submissionMapper;
@@ -60,6 +72,9 @@ public class ExamTaskServiceImpl implements ExamTaskService {
         this.chapterMapper = chapterMapper;
         this.questionMapper = questionMapper;
         this.enrollMapper = enrollMapper;
+        this.noticeMapper = noticeMapper;
+        this.noticeUserMapper = noticeUserMapper;
+        this.userMapper = userMapper;
     }
 
     @Override
@@ -116,6 +131,7 @@ public class ExamTaskServiceImpl implements ExamTaskService {
             relation.setQuestionId(q.getId());
             taskQuestionMapper.insert(relation);
         }
+        notifyStudentsForTask(task, course);
         return task.getId();
     }
 
@@ -254,5 +270,52 @@ public class ExamTaskServiceImpl implements ExamTaskService {
         }
         return userId;
     }
-}
 
+    private void notifyStudentsForTask(EduExamTask task, EduCourse course) {
+        List<EduCourseEnroll> enrolls = enrollMapper.selectList(new LambdaQueryWrapper<EduCourseEnroll>()
+                .eq(EduCourseEnroll::getCourseId, task.getCourseId())
+                .eq(EduCourseEnroll::getStatus, 1));
+        if (enrolls == null || enrolls.isEmpty()) {
+            return;
+        }
+        List<Long> userIds = enrolls.stream()
+                .map(EduCourseEnroll::getUserId)
+                .distinct()
+                .collect(Collectors.toList());
+        if (userIds.isEmpty()) {
+            return;
+        }
+
+        String teacherName = "-";
+        SysUser teacher = userMapper.selectById(task.getTeacherId());
+        if (teacher != null && teacher.getUsername() != null && !teacher.getUsername().isBlank()) {
+            teacherName = teacher.getUsername();
+        }
+
+        String windowText = "";
+        if (task.getStartTime() != null) {
+            windowText = " 开始时间：" + task.getStartTime();
+        }
+        if (task.getEndTime() != null) {
+            windowText = windowText + "，结束时间：" + task.getEndTime();
+        }
+
+        SysNotice notice = new SysNotice();
+        notice.setType("learning");
+        notice.setStatus(1);
+        notice.setTitle("新考试任务已发布");
+        notice.setContent("课程《" + course.getTitle() + "》发布考试《" + task.getTitle() + "》，"
+                + "教师：" + teacherName + "，题量：" + task.getQuestionCount()
+                + "，时长：" + task.getDurationMinutes() + "分钟。" + windowText + " 请及时参加。");
+        noticeMapper.insert(notice);
+
+        for (Long uid : userIds) {
+            SysNoticeUser nu = new SysNoticeUser();
+            nu.setUserId(uid);
+            nu.setNoticeId(notice.getId());
+            nu.setIsRead(0);
+            nu.setIsDeleted(0);
+            noticeUserMapper.insert(nu);
+        }
+    }
+}

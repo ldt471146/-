@@ -11,12 +11,15 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * AI 助手服务实现
@@ -60,18 +63,66 @@ public class AiServiceImpl implements AiService {
             messages.add(Map.of("role", "user", "content", request.getMessage()));
         }
 
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("model", aiProperties.getModel());
-        payload.put("messages", messages);
-        payload.put("temperature", 0.5);
-
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
-        String resp = restTemplate.postForObject(url, entity, String.class);
-        String content = parseContent(resp);
-
         AiChatResponseVO vo = new AiChatResponseVO();
+        String content = tryChatWithFallback(url, headers, messages);
         vo.setContent(content);
         return vo;
+    }
+
+    private String tryChatWithFallback(String url, HttpHeaders headers, List<Map<String, String>> messages) {
+        Set<String> models = new LinkedHashSet<>();
+        if (aiProperties.getModel() != null && !aiProperties.getModel().isBlank()) {
+            models.add(aiProperties.getModel().trim());
+        }
+        if (aiProperties.getFallbackModels() != null) {
+            for (String m : aiProperties.getFallbackModels()) {
+                if (m != null && !m.isBlank()) {
+                    models.add(m.trim());
+                }
+            }
+        }
+        if (models.isEmpty()) {
+            models.add("gpt-4o-mini");
+        }
+
+        String lastError = "";
+        for (String model : models) {
+            try {
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("model", model);
+                payload.put("messages", messages);
+                payload.put("temperature", 0.5);
+                HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
+                String resp = restTemplate.postForObject(url, entity, String.class);
+                String content = parseContent(resp);
+                if (content != null && !content.isBlank()) {
+                    return content;
+                }
+            } catch (HttpStatusCodeException e) {
+                String body = e.getResponseBodyAsString();
+                lastError = "model=" + model + ", status=" + e.getStatusCode() + ", body=" + body;
+                log.warn("AI request failed, try next model: {}", lastError);
+                if (!isRetryableModelError(body) && !e.getStatusCode().is5xxServerError()) {
+                    break;
+                }
+            } catch (Exception e) {
+                lastError = "model=" + model + ", err=" + e.getMessage();
+                log.warn("AI request exception, try next model: {}", lastError);
+            }
+        }
+        log.error("All AI models failed: {}", lastError);
+        return "AI 服务当前繁忙或模型通道不可用，请稍后重试。";
+    }
+
+    private boolean isRetryableModelError(String body) {
+        if (body == null) {
+            return false;
+        }
+        String text = body.toLowerCase();
+        return text.contains("no available channels")
+                || text.contains("无可用渠道")
+                || text.contains("model")
+                || text.contains("service unavailable");
     }
 
     private String parseContent(String resp) {

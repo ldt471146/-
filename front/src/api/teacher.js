@@ -20,6 +20,11 @@ export const updateTeacherQuestion = (id, data) => http.put(`/api/teacher/questi
 export const deleteTeacherQuestion = (id) => http.delete(`/api/teacher/questions/${id}`)
 export const importTeacherQuestions = (data) => http.post('/api/teacher/questions/import', data)
 
+export const fetchTeacherCodeProblems = (params) => http.get('/api/teacher/code-problems', { params })
+export const createTeacherCodeProblem = (data) => http.post('/api/teacher/code-problems', data)
+export const updateTeacherCodeProblem = (id, data) => http.put(`/api/teacher/code-problems/${id}`, data)
+export const deleteTeacherCodeProblem = (id) => http.delete(`/api/teacher/code-problems/${id}`)
+
 export const createTeacherExamTask = (data) => http.post('/api/teacher/exams', data)
 export const fetchTeacherExamTasks = () => http.get('/api/teacher/exams')
 export const deleteTeacherExamTask = (id) => http.delete(`/api/teacher/exams/${id}`)

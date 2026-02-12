@@ -10,6 +10,8 @@ import java.util.List;
 @Data
 public class CodeProblemDetailVO {
     private Long id;
+    private Long courseId;
+    private Long chapterId;
     private String title;
     private String content;
     private Integer difficulty;

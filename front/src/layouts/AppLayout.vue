@@ -80,6 +80,7 @@ const activeMenu = computed(() => {
   const path = router.currentRoute.value.path
   if (path.startsWith('/courses')) return '/courses'
   if (path.startsWith('/practice')) return '/practice'
+  if (path.startsWith('/code-practice')) return '/code-practice'
   if (path.startsWith('/reports')) return '/reports'
   if (path.startsWith('/exams')) return '/exams'
   if (path.startsWith('/notices')) return '/notices'
@@ -88,6 +89,28 @@ const activeMenu = computed(() => {
   if (path.startsWith('/admin')) return '/admin/teacher-apply'
   return path
 })
+
+const quickRoute = ref('')
+const quickOptions = computed(() => {
+  const items = [
+    { label: '学习总览', value: '/dashboard' },
+    { label: '我的课程', value: '/courses' },
+    { label: '题库练习', value: '/practice' },
+    { label: '编程判题', value: '/code-practice' },
+    { label: '在线考试', value: '/exams' },
+    { label: `消息通知${unread.value > 0 ? ` (${unread.value})` : ''}`, value: '/notices' },
+    { label: '成长报告', value: '/reports' }
+  ]
+  if (isTeacher.value) items.push({ label: '教师端', value: '/teacher' })
+  if (isAdmin.value) items.push({ label: '教师审核', value: '/admin/teacher-apply' })
+  return items
+})
+
+const jumpQuick = (path) => {
+  if (!path) return
+  router.push(path)
+  quickRoute.value = ''
+}
 
 const themes = ['neon', 'red', 'aurora']
 const toggleTheme = () => {
@@ -101,7 +124,6 @@ const toggleTheme = () => {
 <template>
   <div class="layout-wrap">
     <div class="hud-grid"></div>
-    <div class="hud-scan"></div>
 
     <el-container class="layout">
       <el-aside :width="collapsed ? '72px' : '240px'" class="aside">
@@ -110,40 +132,43 @@ const toggleTheme = () => {
           <div v-if="!collapsed" class="brand-name">NEON LAB</div>
         </div>
 
-        <el-menu class="menu" :default-active="activeMenu" :collapse="collapsed" router>
+        <el-menu class="menu" :default-active="activeMenu" :default-openeds="['learn', 'grow', 'manage']" :collapse="collapsed" router>
           <el-menu-item index="/dashboard">
             <span class="menu-dot"></span>
             学习总览
           </el-menu-item>
-          <el-menu-item index="/courses">
-            <span class="menu-dot"></span>
-            我的课程
-          </el-menu-item>
-          <el-menu-item index="/practice">
-            <span class="menu-dot"></span>
-            题库练习
-          </el-menu-item>
+          <el-sub-menu index="learn">
+            <template #title>
+              <span class="menu-dot"></span>
+              学习训练
+            </template>
+            <el-menu-item index="/courses">我的课程</el-menu-item>
+            <el-menu-item index="/practice">题库练习</el-menu-item>
+            <el-menu-item index="/code-practice">编程判题</el-menu-item>
+          </el-sub-menu>
           <el-menu-item index="/exams">
             <span class="menu-dot"></span>
             在线考试
           </el-menu-item>
-          <el-menu-item index="/notices">
-            <span class="menu-dot"></span>
-            消息通知
-            <el-badge v-if="unread > 0" :value="unread" class="menu-badge" />
-          </el-menu-item>
-          <el-menu-item index="/reports">
-            <span class="menu-dot"></span>
-            成长报告
-          </el-menu-item>
-          <el-menu-item v-if="isTeacher" index="/teacher">
-            <span class="menu-dot"></span>
-            教师端
-          </el-menu-item>
-          <el-menu-item v-if="isAdmin" index="/admin/teacher-apply">
-            <span class="menu-dot"></span>
-            教师审核
-          </el-menu-item>
+          <el-sub-menu index="grow">
+            <template #title>
+              <span class="menu-dot"></span>
+              互动成长
+            </template>
+            <el-menu-item index="/notices">
+              消息通知
+              <el-badge v-if="unread > 0" :value="unread" class="menu-badge" />
+            </el-menu-item>
+            <el-menu-item index="/reports">成长报告</el-menu-item>
+          </el-sub-menu>
+          <el-sub-menu v-if="isTeacher || isAdmin" index="manage">
+            <template #title>
+              <span class="menu-dot"></span>
+              管理工作台
+            </template>
+            <el-menu-item v-if="isTeacher" index="/teacher">教师端</el-menu-item>
+            <el-menu-item v-if="isAdmin" index="/admin/teacher-apply">教师审核</el-menu-item>
+          </el-sub-menu>
         </el-menu>
 
         <div class="aside-footer">
@@ -159,10 +184,21 @@ const toggleTheme = () => {
             </el-button>
             <div>
               <div class="title display">学习控制台</div>
-              <div class="subtitle">专注、稳定、可持续进阶</div>
+              <div class="subtitle">更少入口，更快到达目标功能</div>
             </div>
           </div>
           <div class="header-right">
+            <el-select
+              v-model="quickRoute"
+              class="quick-jump"
+              size="small"
+              filterable
+              clearable
+              placeholder="快速跳转"
+              @change="jumpQuick"
+            >
+              <el-option v-for="item in quickOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
             <div class="status">
               <span class="status-dot"></span>
               online
@@ -209,22 +245,10 @@ const toggleTheme = () => {
 
 .hud-grid {
   position: absolute;
-  inset: -10%;
-  background-image:
-    linear-gradient(transparent 94%, rgba(255, 255, 255, 0.03) 94%),
-    linear-gradient(90deg, transparent 94%, rgba(255, 255, 255, 0.03) 94%);
-  background-size: 64px 64px;
-  transform: skewY(-6deg);
-  opacity: 0.12;
-  pointer-events: none;
-}
-
-.hud-scan {
-  position: absolute;
   inset: 0;
-  background: linear-gradient(120deg, transparent 10%, rgba(86, 255, 213, 0.06), transparent 60%);
-  opacity: 0.35;
-  animation: scanMove 7s linear infinite;
+  background-image:
+    radial-gradient(circle at 8% 10%, rgba(94, 247, 194, 0.09), transparent 28%),
+    radial-gradient(circle at 94% 14%, rgba(56, 189, 248, 0.08), transparent 24%);
   pointer-events: none;
 }
 
@@ -238,7 +262,7 @@ const toggleTheme = () => {
   border-right: 1px solid var(--ui-border-soft);
   display: flex;
   flex-direction: column;
-  padding: 18px 14px;
+  padding: 16px 12px;
   transition: width 0.2s ease;
   backdrop-filter: blur(6px);
 }
@@ -263,13 +287,15 @@ const toggleTheme = () => {
 }
 
 .brand-name {
-  font-size: 14px;
-  letter-spacing: 0.12em;
+  font-size: 13px;
+  letter-spacing: 0.1em;
   color: var(--ui-text);
 }
 
 .display {
   font-family: var(--font-display);
+  letter-spacing: 0.04em;
+  line-height: 1;
 }
 
 .menu {
@@ -277,7 +303,7 @@ const toggleTheme = () => {
   border: none;
   --el-menu-bg-color: transparent;
   --el-menu-text-color: var(--ui-text);
-  --el-menu-hover-bg-color: rgba(86, 255, 213, 0.08);
+  --el-menu-hover-bg-color: rgba(86, 255, 213, 0.07);
   --el-menu-active-color: var(--ui-accent);
 }
 
@@ -289,6 +315,10 @@ const toggleTheme = () => {
   background: rgba(86, 255, 213, 0.6);
   margin-right: 10px;
   box-shadow: 0 0 8px rgba(86, 255, 213, 0.6);
+}
+
+.quick-jump {
+  width: 150px;
 }
 
 .aside-footer {
@@ -317,7 +347,7 @@ const toggleTheme = () => {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .status {
@@ -338,7 +368,7 @@ const toggleTheme = () => {
 }
 
 .user-name {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--ui-text);
   font-weight: 600;
 }
@@ -369,7 +399,7 @@ const toggleTheme = () => {
 }
 
 .title {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
 }
 
@@ -400,8 +430,17 @@ const toggleTheme = () => {
 }
 
 :deep(.el-menu-item) {
-  border-radius: 12px;
-  margin: 4px 0;
+  border-radius: 10px;
+  margin: 3px 0;
+}
+
+:deep(.el-sub-menu .el-sub-menu__title) {
+  border-radius: 10px;
+  margin: 3px 0;
+}
+
+:deep(.el-sub-menu.is-active > .el-sub-menu__title) {
+  color: var(--ui-accent);
 }
 
 :deep(.el-menu-item.is-active) {
@@ -427,15 +466,6 @@ const toggleTheme = () => {
   box-shadow: 0 0 10px rgba(0, 210, 255, 0.35);
 }
 
-@keyframes scanMove {
-  0% {
-    transform: translateX(-120%);
-  }
-  100% {
-    transform: translateX(120%);
-  }
-}
-
 @keyframes pulse {
   0%,
   100% {
@@ -445,6 +475,18 @@ const toggleTheme = () => {
   50% {
     transform: scale(1.2);
     opacity: 1;
+  }
+}
+
+@media (max-width: 960px) {
+  .quick-jump {
+    display: none;
+  }
+  .header {
+    padding: 18px 14px;
+  }
+  .main {
+    padding: 14px;
   }
 }
 </style>

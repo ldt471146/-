@@ -9,12 +9,18 @@ import com.example.back.dto.TeacherQuestionImportRequest;
 import com.example.back.dto.TeacherLessonRequest;
 import com.example.back.dto.TeacherQuestionOptionRequest;
 import com.example.back.dto.TeacherQuestionRequest;
+import com.example.back.dto.TeacherCodeProblemRequest;
+import com.example.back.dto.TeacherCodeTestcaseRequest;
 import com.example.back.entity.EduChapter;
+import com.example.back.entity.EduCodeProblem;
+import com.example.back.entity.EduCodeTestcase;
 import com.example.back.entity.EduCourse;
 import com.example.back.entity.EduLesson;
 import com.example.back.entity.EduQuestion;
 import com.example.back.entity.EduQuestionOption;
 import com.example.back.mapper.EduChapterMapper;
+import com.example.back.mapper.EduCodeProblemMapper;
+import com.example.back.mapper.EduCodeTestcaseMapper;
 import com.example.back.mapper.EduCourseMapper;
 import com.example.back.mapper.EduLessonMapper;
 import com.example.back.mapper.EduQuestionMapper;
@@ -45,17 +51,23 @@ public class TeacherServiceImpl implements TeacherService {
     private final EduLessonMapper lessonMapper;
     private final EduQuestionMapper questionMapper;
     private final EduQuestionOptionMapper optionMapper;
+    private final EduCodeProblemMapper codeProblemMapper;
+    private final EduCodeTestcaseMapper codeTestcaseMapper;
 
     public TeacherServiceImpl(EduCourseMapper courseMapper,
                               EduChapterMapper chapterMapper,
                               EduLessonMapper lessonMapper,
                               EduQuestionMapper questionMapper,
-                              EduQuestionOptionMapper optionMapper) {
+                              EduQuestionOptionMapper optionMapper,
+                              EduCodeProblemMapper codeProblemMapper,
+                              EduCodeTestcaseMapper codeTestcaseMapper) {
         this.courseMapper = courseMapper;
         this.chapterMapper = chapterMapper;
         this.lessonMapper = lessonMapper;
         this.questionMapper = questionMapper;
         this.optionMapper = optionMapper;
+        this.codeProblemMapper = codeProblemMapper;
+        this.codeTestcaseMapper = codeTestcaseMapper;
     }
 
     private Long requireTeacherId() {
@@ -540,5 +552,166 @@ public class TeacherServiceImpl implements TeacherService {
         vo.setContentText(lesson.getContentText());
         vo.setSortNo(lesson.getSortNo());
         return vo;
+    }
+
+    @Override
+    public PageResultVO<com.example.back.vo.TeacherCodeProblemVO> listCodeProblems(Long courseId, Long chapterId, long page, long size) {
+        Long teacherId = requireTeacherId();
+        if (courseId == null) {
+            throw new IllegalArgumentException("请选择课程");
+        }
+        EduCourse course = courseMapper.selectById(courseId);
+        if (course == null || !teacherId.equals(course.getTeacherId())) {
+            throw new IllegalArgumentException("无权限");
+        }
+        Page<EduCodeProblem> mpPage = new Page<>(page, size);
+        Page<EduCodeProblem> result = codeProblemMapper.selectPage(mpPage, new LambdaQueryWrapper<EduCodeProblem>()
+                .eq(EduCodeProblem::getTeacherId, teacherId)
+                .eq(EduCodeProblem::getCourseId, courseId)
+                .eq(chapterId != null, EduCodeProblem::getChapterId, chapterId)
+                .orderByDesc(EduCodeProblem::getId));
+        List<com.example.back.vo.TeacherCodeProblemVO> records = buildTeacherCodeProblemVOs(result.getRecords());
+        PageResultVO<com.example.back.vo.TeacherCodeProblemVO> pageResult = new PageResultVO<>();
+        pageResult.setPage(page);
+        pageResult.setSize(size);
+        pageResult.setTotal(result.getTotal());
+        pageResult.setRecords(records);
+        return pageResult;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Long createCodeProblem(TeacherCodeProblemRequest request) {
+        Long teacherId = requireTeacherId();
+        if (request.getCourseId() == null) {
+            throw new IllegalArgumentException("请选择课程");
+        }
+        EduCourse course = courseMapper.selectById(request.getCourseId());
+        if (course == null || !teacherId.equals(course.getTeacherId())) {
+            throw new IllegalArgumentException("课程不存在或无权限");
+        }
+        if (request.getChapterId() != null) {
+            EduChapter chapter = chapterMapper.selectById(request.getChapterId());
+            if (chapter == null || !request.getCourseId().equals(chapter.getCourseId())) {
+                throw new IllegalArgumentException("章节不属于该课程");
+            }
+        }
+        EduCodeProblem problem = new EduCodeProblem();
+        problem.setTeacherId(teacherId);
+        problem.setCourseId(request.getCourseId());
+        problem.setChapterId(request.getChapterId());
+        problem.setTitle(request.getTitle());
+        problem.setContent(request.getContent());
+        problem.setDifficulty(request.getDifficulty() == null ? 1 : request.getDifficulty());
+        problem.setTimeLimit(request.getTimeLimit() == null ? 1000 : request.getTimeLimit());
+        problem.setMemoryLimit(request.getMemoryLimit() == null ? 256 : request.getMemoryLimit());
+        problem.setStatus(request.getStatus() == null ? 1 : request.getStatus());
+        codeProblemMapper.insert(problem);
+        saveCodeTestcases(problem.getId(), request.getTestcases());
+        return problem.getId();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateCodeProblem(Long id, TeacherCodeProblemRequest request) {
+        Long teacherId = requireTeacherId();
+        EduCodeProblem problem = codeProblemMapper.selectById(id);
+        if (problem == null) {
+            throw new IllegalArgumentException("编程题不存在");
+        }
+        if (!teacherId.equals(problem.getTeacherId())) {
+            throw new IllegalArgumentException("无权限");
+        }
+        Long finalCourseId = request.getCourseId() == null ? problem.getCourseId() : request.getCourseId();
+        EduCourse course = courseMapper.selectById(finalCourseId);
+        if (course == null || !teacherId.equals(course.getTeacherId())) {
+            throw new IllegalArgumentException("课程不存在或无权限");
+        }
+        if (request.getChapterId() != null) {
+            EduChapter chapter = chapterMapper.selectById(request.getChapterId());
+            if (chapter == null || !finalCourseId.equals(chapter.getCourseId())) {
+                throw new IllegalArgumentException("章节不属于该课程");
+            }
+        }
+        problem.setCourseId(finalCourseId);
+        problem.setChapterId(request.getChapterId());
+        problem.setTitle(request.getTitle());
+        problem.setContent(request.getContent());
+        problem.setDifficulty(request.getDifficulty() == null ? 1 : request.getDifficulty());
+        problem.setTimeLimit(request.getTimeLimit() == null ? 1000 : request.getTimeLimit());
+        problem.setMemoryLimit(request.getMemoryLimit() == null ? 256 : request.getMemoryLimit());
+        if (request.getStatus() != null) {
+            problem.setStatus(request.getStatus());
+        }
+        codeProblemMapper.updateById(problem);
+        codeTestcaseMapper.delete(new LambdaQueryWrapper<EduCodeTestcase>()
+                .eq(EduCodeTestcase::getProblemId, id));
+        saveCodeTestcases(id, request.getTestcases());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteCodeProblem(Long id) {
+        Long teacherId = requireTeacherId();
+        EduCodeProblem problem = codeProblemMapper.selectById(id);
+        if (problem == null) {
+            return;
+        }
+        if (!teacherId.equals(problem.getTeacherId())) {
+            throw new IllegalArgumentException("无权限");
+        }
+        codeProblemMapper.deleteById(id);
+        codeTestcaseMapper.delete(new LambdaQueryWrapper<EduCodeTestcase>()
+                .eq(EduCodeTestcase::getProblemId, id));
+    }
+
+    private void saveCodeTestcases(Long problemId, List<TeacherCodeTestcaseRequest> testcases) {
+        if (testcases == null || testcases.isEmpty()) {
+            return;
+        }
+        for (TeacherCodeTestcaseRequest tc : testcases) {
+            if (tc == null) {
+                continue;
+            }
+            EduCodeTestcase row = new EduCodeTestcase();
+            row.setProblemId(problemId);
+            row.setInputData(tc.getInputData());
+            row.setOutputData(tc.getOutputData());
+            row.setIsSample(tc.getIsSample() == null ? 0 : tc.getIsSample());
+            codeTestcaseMapper.insert(row);
+        }
+    }
+
+    private List<com.example.back.vo.TeacherCodeProblemVO> buildTeacherCodeProblemVOs(List<EduCodeProblem> problems) {
+        if (problems == null || problems.isEmpty()) {
+            return List.of();
+        }
+        List<Long> ids = problems.stream().map(EduCodeProblem::getId).collect(Collectors.toList());
+        List<EduCodeTestcase> testcases = codeTestcaseMapper.selectList(new LambdaQueryWrapper<EduCodeTestcase>()
+                .in(EduCodeTestcase::getProblemId, ids)
+                .orderByAsc(EduCodeTestcase::getId));
+        Map<Long, List<EduCodeTestcase>> testcaseMap = testcases.stream()
+                .collect(Collectors.groupingBy(EduCodeTestcase::getProblemId));
+        return problems.stream().map(p -> {
+            com.example.back.vo.TeacherCodeProblemVO vo = new com.example.back.vo.TeacherCodeProblemVO();
+            vo.setId(p.getId());
+            vo.setCourseId(p.getCourseId());
+            vo.setChapterId(p.getChapterId());
+            vo.setTitle(p.getTitle());
+            vo.setContent(p.getContent());
+            vo.setDifficulty(p.getDifficulty());
+            vo.setTimeLimit(p.getTimeLimit());
+            vo.setMemoryLimit(p.getMemoryLimit());
+            vo.setStatus(p.getStatus());
+            vo.setTestcases(testcaseMap.getOrDefault(p.getId(), List.of()).stream().map(tc -> {
+                com.example.back.vo.TeacherCodeTestcaseVO x = new com.example.back.vo.TeacherCodeTestcaseVO();
+                x.setId(tc.getId());
+                x.setInputData(tc.getInputData());
+                x.setOutputData(tc.getOutputData());
+                x.setIsSample(tc.getIsSample());
+                return x;
+            }).collect(Collectors.toList()));
+            return vo;
+        }).collect(Collectors.toList());
     }
 }

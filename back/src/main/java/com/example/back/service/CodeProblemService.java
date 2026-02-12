@@ -11,7 +11,7 @@ import java.util.List;
  * 编程题服务
  */
 public interface CodeProblemService {
-    List<CodeProblemVO> listProblems();
+    List<CodeProblemVO> listProblems(Long courseId, Long chapterId);
 
     CodeProblemDetailVO getDetail(Long id);
 
