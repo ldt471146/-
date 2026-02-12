@@ -15,14 +15,12 @@ public interface SysNoticeMapper extends BaseMapper<SysNotice> {
     @Select("""
             SELECT n.id, n.title, n.content, n.type, n.created_at AS createdAt,
                    COALESCE(u.is_read, 0) AS isRead
-            FROM sys_notice n
-            LEFT JOIN sys_notice_user u
-              ON u.notice_id = n.id AND u.user_id = #{userId} AND u.is_deleted = 0
-            WHERE n.status = 1 AND n.is_deleted = 0
-              AND NOT EXISTS (
-                SELECT 1 FROM sys_notice_user ux
-                WHERE ux.notice_id = n.id AND ux.user_id = #{userId} AND ux.is_deleted = 1
-              )
+            FROM sys_notice_user u
+            INNER JOIN sys_notice n ON n.id = u.notice_id
+            WHERE u.user_id = #{userId}
+              AND u.is_deleted = 0
+              AND n.status = 1
+              AND n.is_deleted = 0
             ORDER BY n.created_at DESC
             LIMIT #{size} OFFSET #{offset}
             """)
@@ -30,26 +28,24 @@ public interface SysNoticeMapper extends BaseMapper<SysNotice> {
 
     @Select("""
             SELECT COUNT(1)
-            FROM sys_notice
-            WHERE status = 1 AND is_deleted = 0
-              AND NOT EXISTS (
-                SELECT 1 FROM sys_notice_user ux
-                WHERE ux.notice_id = sys_notice.id AND ux.user_id = #{userId} AND ux.is_deleted = 1
-              )
+            FROM sys_notice_user u
+            INNER JOIN sys_notice n ON n.id = u.notice_id
+            WHERE u.user_id = #{userId}
+              AND u.is_deleted = 0
+              AND n.status = 1
+              AND n.is_deleted = 0
             """)
     Long countAll(@Param("userId") Long userId);
 
     @Select("""
             SELECT COUNT(1)
-            FROM sys_notice n
-            LEFT JOIN sys_notice_user u
-              ON u.notice_id = n.id AND u.user_id = #{userId} AND u.is_deleted = 0
-            WHERE n.status = 1 AND n.is_deleted = 0
+            FROM sys_notice_user u
+            INNER JOIN sys_notice n ON n.id = u.notice_id
+            WHERE u.user_id = #{userId}
+              AND u.is_deleted = 0
               AND COALESCE(u.is_read, 0) = 0
-              AND NOT EXISTS (
-                SELECT 1 FROM sys_notice_user ux
-                WHERE ux.notice_id = n.id AND ux.user_id = #{userId} AND ux.is_deleted = 1
-              )
+              AND n.status = 1
+              AND n.is_deleted = 0
             """)
     Long countUnread(@Param("userId") Long userId);
 }

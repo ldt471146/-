@@ -72,7 +72,6 @@ public class NoticeServiceImpl implements NoticeService {
             throw new IllegalArgumentException("未登录");
         }
         noticeUserMapper.markAllRead(userId);
-        noticeUserMapper.insertAllReadIfMissing(userId);
     }
 
     @Override

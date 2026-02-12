@@ -276,13 +276,41 @@ const toggleTheme = () => {
 }
 
 .aside {
-  background: var(--ui-surface);
+  background:
+    linear-gradient(165deg, rgba(8, 22, 36, 0.82), rgba(6, 16, 28, 0.88)),
+    var(--ui-surface);
   border-right: 1px solid var(--ui-border-soft);
   display: flex;
   flex-direction: column;
   padding: 16px 12px;
   transition: width 0.2s ease;
   backdrop-filter: blur(6px);
+  position: relative;
+  overflow: hidden;
+}
+
+.aside::before {
+  content: '';
+  position: absolute;
+  left: -80px;
+  top: -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.2), transparent 70%);
+  pointer-events: none;
+}
+
+.aside::after {
+  content: '';
+  position: absolute;
+  right: -90px;
+  bottom: -70px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.16), transparent 72%);
+  pointer-events: none;
 }
 
 .brand {
@@ -290,6 +318,7 @@ const toggleTheme = () => {
   align-items: center;
   gap: 12px;
   margin-bottom: 18px;
+  z-index: 1;
 }
 
 .brand-core {
@@ -321,15 +350,17 @@ const toggleTheme = () => {
   border: none;
   --el-menu-bg-color: transparent;
   --el-menu-text-color: var(--ui-text);
-  --el-menu-hover-bg-color: rgba(86, 255, 213, 0.07);
+  --el-menu-hover-bg-color: rgba(86, 255, 213, 0.12);
   --el-menu-active-color: var(--ui-accent);
+  z-index: 1;
 }
 
 .menu-dot {
   display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  transform: rotate(45deg);
   background: rgba(86, 255, 213, 0.6);
   margin-right: 10px;
   box-shadow: 0 0 8px rgba(86, 255, 213, 0.6);
@@ -449,12 +480,16 @@ const toggleTheme = () => {
 
 :deep(.el-menu-item) {
   border-radius: 10px;
-  margin: 3px 0;
+  margin: 4px 0;
+  min-height: 42px;
+  transition: all 0.18s ease;
 }
 
 :deep(.el-sub-menu .el-sub-menu__title) {
   border-radius: 10px;
-  margin: 3px 0;
+  margin: 4px 0;
+  min-height: 44px;
+  transition: all 0.18s ease;
 }
 
 :deep(.el-sub-menu.is-active > .el-sub-menu__title) {
@@ -465,11 +500,20 @@ const toggleTheme = () => {
   background: linear-gradient(120deg, rgba(86, 255, 213, 0.16), rgba(0, 210, 255, 0.12));
   border: 1px solid var(--ui-border);
   box-shadow: 0 0 16px rgba(86, 255, 213, 0.2);
+  transform: translateX(2px);
 }
 
 :deep(.el-menu-item.is-active .menu-dot) {
   background: var(--ui-accent);
   box-shadow: 0 0 12px rgba(86, 255, 213, 0.9);
+}
+
+:deep(.el-menu-item:hover) {
+  transform: translateX(2px);
+}
+
+:deep(.el-sub-menu .el-menu-item) {
+  margin-left: 6px;
 }
 
 

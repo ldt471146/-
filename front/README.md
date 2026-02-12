@@ -61,3 +61,18 @@ npm run build
 1. 先跑“基础与鉴权”
 2. 再按“学生 -> 教师 -> 管理员”顺序验证
 3. 最后统一做移动端与控制台检查
+
+## 最近更新（2026-02-12）
+
+- 社区列表与帖子详情新增时间展示：
+  - 帖子发布时间
+  - 最后活跃时间
+  - 回复发布时间
+- 左侧导航栏视觉增强：
+  - 渐变玻璃背景
+  - 选中态高亮与位移动效
+  - 菜单层级间距优化
+- 社区相关页面：
+  - `front/src/pages/Community.vue`
+  - `front/src/pages/CommunityPostDetail.vue`
+  - `front/src/layouts/AppLayout.vue`

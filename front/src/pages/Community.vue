@@ -82,6 +82,14 @@ const goDetail = (id) => {
   router.push(`/community/${id}`)
 }
 
+const formatDateTime = (value) => {
+  if (!value) return '-'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
 onMounted(load)
 </script>
 
@@ -122,6 +130,8 @@ onMounted(load)
         <div class="post-preview">{{ item.contentPreview || '暂无内容摘要' }}</div>
         <div class="post-meta">
           <span>作者：{{ item.authorName || '-' }}</span>
+          <span>发布时间：{{ formatDateTime(item.createdAt) }}</span>
+          <span>最后活跃：{{ formatDateTime(item.lastReplyAt) }}</span>
           <span>回复：{{ item.replyCount || 0 }}</span>
           <span>浏览：{{ item.viewCount || 0 }}</span>
         </div>

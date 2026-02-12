@@ -89,6 +89,14 @@ const markBest = async (replyId) => {
   }
 }
 
+const formatDateTime = (value) => {
+  if (!value) return '-'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
 onMounted(load)
 </script>
 
@@ -98,6 +106,8 @@ onMounted(load)
       <div class="post-title">{{ detail.title }}</div>
       <div class="post-meta">
         <span>作者：{{ detail.authorName || '-' }}</span>
+        <span>发布时间：{{ formatDateTime(detail.createdAt) }}</span>
+        <span>最后活跃：{{ formatDateTime(detail.lastReplyAt) }}</span>
         <span>浏览：{{ detail.viewCount || 0 }}</span>
         <span>回复：{{ detail.replies?.length || 0 }}</span>
       </div>
@@ -141,6 +151,7 @@ onMounted(load)
           <div class="reply-head">
             <div class="name-line">
               <span class="name">{{ item.authorName || '-' }}</span>
+              <span class="time">{{ formatDateTime(item.createdAt) }}</span>
               <el-tag v-if="item.isBest === 1" type="success" size="small">最佳答案</el-tag>
             </div>
             <el-button
@@ -234,6 +245,11 @@ onMounted(load)
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.time {
+  font-size: 12px;
+  color: var(--ui-text-muted);
 }
 
 .name {
