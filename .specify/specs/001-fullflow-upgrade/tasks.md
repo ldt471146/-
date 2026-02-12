@@ -14,7 +14,7 @@
 ## Phase 1: Baseline Audit & Hardening
 
 - [x] T001 [Done] 盘点现有模块能力并产出基线文档 `PROJECT_OVERVIEW.md`
-- [ ] T002 [Todo] 增加后端关键流程集成测试骨架 `back/src/test/java/...`
+- [x] T002 [Done] 增加后端关键流程集成测试骨架 `back/src/test/java/...`
 - [ ] T003 [Todo] 增加前端关键页面冒烟清单 `front/README.md` 或 `docs/`
 - [ ] T004 [Todo] 增加 50 并发提交压测脚本与结果记录 `back/tests/perf/`
 - [ ] T005 [Todo] 将敏感配置迁移到环境变量并更新说明 `back/src/main/resources/application.yml`
