@@ -104,11 +104,13 @@ const activeMenu = computed(() => {
   if (path.startsWith('/practice')) return '/practice'
   if (path.startsWith('/code-practice')) return '/code-practice'
   if (path.startsWith('/learning-path')) return '/learning-path'
+  if (path.startsWith('/homework')) return '/homework'
   if (path.startsWith('/community')) return '/community'
   if (path.startsWith('/reports')) return '/reports'
   if (path.startsWith('/exams')) return '/exams'
   if (path.startsWith('/notices')) return '/notices'
   if (path.startsWith('/profile')) return '/profile'
+  if (path.startsWith('/teacher/homework')) return '/teacher/homework'
   if (path.startsWith('/teacher/stats')) return '/teacher/stats'
   if (path.startsWith('/teacher')) return '/teacher'
   if (path.startsWith('/admin/users')) return '/admin/users'
@@ -126,12 +128,14 @@ const quickOptions = computed(() => {
     { label: '题库练习', value: '/practice' },
     { label: '编程判题', value: '/code-practice' },
     { label: '学习路径', value: '/learning-path' },
+    { label: '我的作业', value: '/homework' },
     { label: '在线考试', value: '/exams' },
     { label: '编程社区', value: '/community' },
     { label: `消息通知${unread.value > 0 ? ` (${unread.value})` : ''}`, value: '/notices' },
     { label: '成长报告', value: '/reports' }
   ]
   if (isTeacher.value) items.push({ label: '教师端', value: '/teacher' })
+  if (isTeacher.value) items.push({ label: '作业管理', value: '/teacher/homework' })
   if (isTeacher.value) items.push({ label: '教学统计', value: '/teacher/stats' })
   if (isAdmin.value) items.push({ label: '用户管理', value: '/admin/users' })
   if (isAdmin.value) items.push({ label: '课程审核', value: '/admin/courses' })
@@ -192,6 +196,10 @@ const toggleTheme = () => {
               <el-icon class="menu-icon"><Share /></el-icon>
               学习路径
             </el-menu-item>
+            <el-menu-item index="/homework">
+              <el-icon class="menu-icon"><DocumentChecked /></el-icon>
+              我的作业
+            </el-menu-item>
           </el-sub-menu>
           <el-menu-item index="/exams">
             <el-icon class="menu-icon"><Finished /></el-icon>
@@ -228,6 +236,10 @@ const toggleTheme = () => {
             <el-menu-item v-if="isTeacher" index="/teacher/stats">
               <el-icon class="menu-icon"><Histogram /></el-icon>
               教学统计
+            </el-menu-item>
+            <el-menu-item v-if="isTeacher" index="/teacher/homework">
+              <el-icon class="menu-icon"><DocumentChecked /></el-icon>
+              作业管理
             </el-menu-item>
             <el-menu-item v-if="isAdmin" index="/admin/users">
               <el-icon class="menu-icon"><UserFilled /></el-icon>

@@ -10,12 +10,14 @@ import Community from '../pages/Community.vue'
 import CommunityPostDetail from '../pages/CommunityPostDetail.vue'
 import Reports from '../pages/Reports.vue'
 import Exams from '../pages/Exams.vue'
+import Homework from '../pages/Homework.vue'
 import Profile from '../pages/Profile.vue'
 import Notices from '../pages/Notices.vue'
 import TeacherDashboard from '../pages/TeacherDashboard.vue'
 import TeacherCourseDetail from '../pages/TeacherCourseDetail.vue'
 import TeacherQuestions from '../pages/TeacherQuestions.vue'
 import TeacherExams from '../pages/TeacherExams.vue'
+import TeacherHomework from '../pages/TeacherHomework.vue'
 import TeacherStats from '../pages/TeacherStats.vue'
 import AdminTeacherApply from '../pages/AdminTeacherApply.vue'
 import AdminUsers from '../pages/AdminUsers.vue'
@@ -44,9 +46,11 @@ const routes = [
       { path: 'notices', component: Notices },
       { path: 'reports', component: Reports },
       { path: 'exams', component: Exams },
+      { path: 'homework', component: Homework },
       { path: 'teacher', component: TeacherDashboard },
       { path: 'teacher/questions', component: TeacherQuestions },
       { path: 'teacher/exams', component: TeacherExams },
+      { path: 'teacher/homework', component: TeacherHomework },
       { path: 'teacher/stats', component: TeacherStats },
       { path: 'teacher/courses/:id', component: TeacherCourseDetail },
       { path: 'admin/users', component: AdminUsers },
