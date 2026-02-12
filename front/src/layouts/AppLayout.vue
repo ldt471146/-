@@ -423,7 +423,7 @@ const toggleTheme = () => {
 .display {
   font-family: var(--font-display);
   letter-spacing: 0.04em;
-  line-height: 1;
+  line-height: 1.2;
 }
 
 .menu {
@@ -480,7 +480,7 @@ const toggleTheme = () => {
 
 .header-left {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
   z-index: 1;
 }
@@ -566,12 +566,14 @@ const toggleTheme = () => {
 .title {
   font-size: 22px;
   font-weight: 600;
+  padding-top: 2px;
 }
 
 .subtitle {
   font-size: 12px;
   color: var(--ui-text-muted);
   margin-top: 4px;
+  line-height: 1.45;
 }
 
 .title-metas {
@@ -658,6 +660,64 @@ const toggleTheme = () => {
   border-bottom: 1px solid var(--ui-border-soft);
 }
 
+:deep(.el-table) {
+  border: 1px solid var(--ui-border-soft);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+:deep(.el-table th.el-table__cell) {
+  background: rgba(86, 255, 213, 0.08);
+  color: var(--ui-text);
+}
+
+:deep(.el-table tr) {
+  background: transparent;
+}
+
+:deep(.el-table td.el-table__cell) {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+:deep(.el-input__wrapper),
+:deep(.el-select__wrapper),
+:deep(.el-textarea__inner) {
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+
+:deep(.el-input__wrapper.is-focus),
+:deep(.el-select__wrapper.is-focused),
+:deep(.el-textarea__inner:focus) {
+  box-shadow:
+    0 0 0 1px rgba(86, 255, 213, 0.55) inset,
+    0 0 0 3px rgba(86, 255, 213, 0.12);
+}
+
+:deep(.el-button) {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+:deep(.el-button:hover) {
+  transform: translateY(-1px);
+}
+
+:deep(.el-empty__description p) {
+  color: var(--ui-text-muted);
+}
+
+:deep(.el-pagination) {
+  padding-top: 6px;
+}
+
+:deep(.el-pagination .btn-prev),
+:deep(.el-pagination .btn-next),
+:deep(.el-pagination .el-pager li) {
+  border-radius: 8px;
+}
+
 .theme-btn {
   display: inline-flex;
   align-items: center;
@@ -737,6 +797,20 @@ const toggleTheme = () => {
   box-shadow: 0 0 10px rgba(0, 210, 255, 0.35);
 }
 
+.content-shell::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.content-shell::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(86, 255, 213, 0.45), rgba(0, 210, 255, 0.45));
+}
+
+.content-shell::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+
 @keyframes pulse {
   0%,
   100% {
@@ -761,6 +835,9 @@ const toggleTheme = () => {
 }
 
 @media (max-width: 960px) {
+  .subtitle {
+    line-height: 1.35;
+  }
   .title-metas {
     display: none;
   }
