@@ -28,12 +28,34 @@ public class GovernanceTableInitRunner implements ApplicationRunner {
 
     private void ensureSysUserGovernanceColumns() {
         try {
-            jdbcTemplate.execute("ALTER TABLE sys_user ADD COLUMN IF NOT EXISTS mute_status TINYINT NOT NULL DEFAULT 0");
-            jdbcTemplate.execute("ALTER TABLE sys_user ADD COLUMN IF NOT EXISTS ban_reason VARCHAR(255) NULL");
+            if (!hasColumn("sys_user", "mute_status")) {
+                jdbcTemplate.execute("ALTER TABLE sys_user ADD COLUMN mute_status TINYINT NOT NULL DEFAULT 0");
+                log.info("已新增字段: sys_user.mute_status");
+            }
+            if (!hasColumn("sys_user", "ban_reason")) {
+                jdbcTemplate.execute("ALTER TABLE sys_user ADD COLUMN ban_reason VARCHAR(255) NULL");
+                log.info("已新增字段: sys_user.ban_reason");
+            }
             log.info("用户治理字段检查完成");
         } catch (Exception e) {
-            log.warn("用户治理字段初始化跳过: {}", e.getMessage());
+            log.warn("用户治理字段初始化失败: {}", e.getMessage());
         }
+    }
+
+    private boolean hasColumn(String tableName, String columnName) {
+        Integer count = jdbcTemplate.queryForObject(
+                """
+                        SELECT COUNT(1)
+                        FROM information_schema.COLUMNS
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME = ?
+                          AND COLUMN_NAME = ?
+                        """,
+                Integer.class,
+                tableName,
+                columnName
+        );
+        return count != null && count > 0;
     }
 
     private void createCommunityPostTable() {
