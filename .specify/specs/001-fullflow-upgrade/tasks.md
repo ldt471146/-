@@ -31,9 +31,9 @@
 - [x] T103 [Done] [US1] 题库提交/错题/收藏/统计 `back/.../QuestionController.java`, `front/src/pages/Practice.vue`
 - [x] T104 [Done] [US1] 编程题提交与本地判题 `back/.../CodeProblemController.java`, `back/.../LocalJudgeClient.java`
 - [x] T105 [Done] [US1] 模拟考试与任务考试 `back/.../ExamController.java`, `back/.../ExamTaskController.java`, `front/src/pages/Exams.vue`
-- [ ] T106 [Todo] [US1] 补判题超时/编译失败/运行错误的统一错误码与前端展示增强 `back/.../CodeProblemServiceImpl.java`, `front/src/pages/CodePractice.vue`
-- [ ] T107 [Todo] [US1] 增加“编辑器默认模板代码 + 输入用例引导提示” `front/src/pages/CodePractice.vue`
-- [ ] T108 [Todo] [US1] 针对考试提交、判题提交增加端到端回归测试 `back/src/test/java/...`
+- [x] T106 [Done] [US1] 补判题超时/编译失败/运行错误的统一错误码与前端展示增强 `back/.../CodeProblemServiceImpl.java`, `front/src/pages/CodePractice.vue`
+- [x] T107 [Done] [US1] 增加“编辑器默认模板代码 + 输入用例引导提示” `front/src/pages/CodePractice.vue`
+- [x] T108 [Partial] [US1] 针对考试提交、判题提交增加回归测试骨架（Web层）`back/src/test/java/com/example/back/controller/`
 
 ---
 
@@ -127,4 +127,3 @@
 如果你要最快提交阶段成果，建议 MVP 截止线设为：
 - 完成 Phase 1 + Phase 2 + Phase 3 + T601  
 这样可覆盖“学生闭环 + 教师发布 + 基础可视化 + 性能验证”。
-
