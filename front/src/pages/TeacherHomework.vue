@@ -8,7 +8,8 @@ import {
   updateTeacherHomework,
   deleteTeacherHomework,
   fetchTeacherHomework,
-  fetchTeacherHomeworkDetail
+  fetchTeacherHomeworkDetail,
+  fetchTeacherHomeworkStats
 } from '../api/homework'
 
 const loading = ref(false)
@@ -33,6 +34,13 @@ const questionLoading = ref(false)
 const detailOpen = ref(false)
 const detailLoading = ref(false)
 const detail = ref(null)
+const stats = ref(null)
+const participationRate = computed(() => {
+  const expected = stats.value?.expectedStudents || 0
+  const active = stats.value?.activeStudents || 0
+  if (!expected) return '0%'
+  return `${Math.round((active * 10000) / expected) / 100}%`
+})
 
 const fmt = (v) => (v ? dayjs(v).format('YYYY-MM-DD HH:mm') : '-')
 
@@ -210,9 +218,14 @@ const openDetail = async (row) => {
   detailOpen.value = true
   detailLoading.value = true
   detail.value = null
+  stats.value = null
   try {
-    const res = await fetchTeacherHomeworkDetail(row.id)
-    detail.value = res.data || null
+    const [detailRes, statsRes] = await Promise.all([
+      fetchTeacherHomeworkDetail(row.id),
+      fetchTeacherHomeworkStats(row.id)
+    ])
+    detail.value = detailRes.data || null
+    stats.value = statsRes.data || null
   } catch (e) {
     ElNotification({
       title: '加载失败',
@@ -337,6 +350,33 @@ onMounted(async () => {
         </template>
         <template #default>
           <div v-if="detail" class="detail">
+            <div class="stats-grid" v-if="stats">
+              <div class="stat-item">
+                <div class="stat-k">应参与人数</div>
+                <div class="stat-v">{{ stats.expectedStudents || 0 }}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-k">已参与人数</div>
+                <div class="stat-v">{{ stats.activeStudents || 0 }}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-k">参与率</div>
+                <div class="stat-v">{{ participationRate }}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-k">正确率</div>
+                <div class="stat-v">{{ stats.accuracy || 0 }}%</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-k">提交次数</div>
+                <div class="stat-v">{{ stats.submissionCount || 0 }}</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-k">最近提交</div>
+                <div class="stat-v">{{ fmt(stats.lastSubmitAt) }}</div>
+              </div>
+            </div>
+
             <div class="meta-grid">
               <div class="meta-item">
                 <div class="meta-k">课程</div>
@@ -424,6 +464,29 @@ onMounted(async () => {
   gap: 10px;
 }
 
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stat-item {
+  border: 1px solid var(--ui-border-soft);
+  border-radius: 10px;
+  padding: 10px;
+  background: var(--ui-surface-soft);
+}
+
+.stat-k {
+  font-size: 12px;
+  color: var(--ui-text-muted);
+}
+
+.stat-v {
+  margin-top: 4px;
+  font-weight: 700;
+}
+
 .meta-item {
   border: 1px solid var(--ui-border-soft);
   border-radius: 10px;
@@ -456,6 +519,9 @@ onMounted(async () => {
     grid-template-columns: 1fr;
   }
   .meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

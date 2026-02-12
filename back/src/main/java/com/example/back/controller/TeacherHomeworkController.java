@@ -5,6 +5,7 @@ import com.example.back.dto.TeacherHomeworkCreateRequest;
 import com.example.back.service.HomeworkService;
 import com.example.back.vo.HomeworkDetailVO;
 import com.example.back.vo.HomeworkItemVO;
+import com.example.back.vo.HomeworkStatsVO;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -45,6 +46,11 @@ public class TeacherHomeworkController {
     @GetMapping("/{id}")
     public ApiResponse<HomeworkDetailVO> detail(@PathVariable("id") Long id) {
         return ApiResponse.ok(homeworkService.teacherDetail(id));
+    }
+
+    @GetMapping("/{id}/stats")
+    public ApiResponse<HomeworkStatsVO> stats(@PathVariable("id") Long id) {
+        return ApiResponse.ok(homeworkService.teacherStats(id));
     }
 
     @DeleteMapping("/{id}")

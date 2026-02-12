@@ -17,6 +17,7 @@
 ## 新增后端模块（2026-02-12）
 - 作业模块：
   - 教师端：`/api/teacher/homework`（创建/列表/详情/删除）
+  - 教师端：`/api/teacher/homework/{id}` 支持更新，`/api/teacher/homework/{id}/stats` 提供作业统计
   - 学生端：`/api/homework`（我的作业列表/详情）
   - 自动建表：`edu_homework`、`edu_homework_problem`
 
@@ -42,6 +43,9 @@
   - 右上角显示用户头像、用户名、退出登录
 - AI 助手：
   - 支持鼠标按住拖拽头像、拖拽聊天面板、拖拽右下角缩放
+- 作业前端：
+  - 学生端：`/homework`（课程筛选、状态筛选、排序、详情抽屉）
+  - 教师端：`/teacher/homework`（新建、编辑、删除、课程筛选、详情统计）
 
 ## 重要配置
 - 163 SMTP：必须使用授权码

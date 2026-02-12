@@ -7,4 +7,5 @@ export const createTeacherHomework = (data) => http.post('/api/teacher/homework'
 export const updateTeacherHomework = (id, data) => http.put(`/api/teacher/homework/${id}`, data)
 export const fetchTeacherHomework = (params) => http.get('/api/teacher/homework', { params })
 export const fetchTeacherHomeworkDetail = (id) => http.get(`/api/teacher/homework/${id}`)
+export const fetchTeacherHomeworkStats = (id) => http.get(`/api/teacher/homework/${id}/stats`)
 export const deleteTeacherHomework = (id) => http.delete(`/api/teacher/homework/${id}`)

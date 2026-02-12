@@ -3,10 +3,14 @@ import { computed, onMounted, ref } from 'vue'
 import dayjs from 'dayjs'
 import { ElNotification } from 'element-plus'
 import { fetchMyHomework, fetchMyHomeworkDetail } from '../api/homework'
+import http from '../api/http'
 
 const loading = ref(false)
 const list = ref([])
+const courses = ref([])
 const filter = ref('all')
+const selectedCourseId = ref(null)
+const sortMode = ref('deadline-asc')
 const detailOpen = ref(false)
 const detailLoading = ref(false)
 const detail = ref(null)
@@ -25,17 +29,43 @@ const statusType = (deadline) => {
 }
 
 const filtered = computed(() => {
-  if (filter.value === 'active') return list.value.filter((x) => x.deadline && dayjs(x.deadline).isAfter(now()))
-  if (filter.value === 'expired') return list.value.filter((x) => x.deadline && dayjs(x.deadline).isBefore(now()))
-  if (filter.value === 'no-deadline') return list.value.filter((x) => !x.deadline)
-  return list.value
+  let rows = [...list.value]
+  if (selectedCourseId.value) {
+    rows = rows.filter((x) => x.courseId === selectedCourseId.value)
+  }
+  if (filter.value === 'active') rows = rows.filter((x) => x.deadline && dayjs(x.deadline).isAfter(now()))
+  if (filter.value === 'expired') rows = rows.filter((x) => x.deadline && dayjs(x.deadline).isBefore(now()))
+  if (filter.value === 'no-deadline') rows = rows.filter((x) => !x.deadline)
+
+  if (sortMode.value === 'deadline-asc') {
+    rows.sort((a, b) => {
+      if (!a.deadline && !b.deadline) return 0
+      if (!a.deadline) return 1
+      if (!b.deadline) return -1
+      return dayjs(a.deadline).valueOf() - dayjs(b.deadline).valueOf()
+    })
+  } else if (sortMode.value === 'deadline-desc') {
+    rows.sort((a, b) => {
+      if (!a.deadline && !b.deadline) return 0
+      if (!a.deadline) return 1
+      if (!b.deadline) return -1
+      return dayjs(b.deadline).valueOf() - dayjs(a.deadline).valueOf()
+    })
+  } else if (sortMode.value === 'score-desc') {
+    rows.sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0))
+  }
+  return rows
 })
 
 const load = async () => {
   loading.value = true
   try {
-    const res = await fetchMyHomework()
-    list.value = res.data || []
+    const [homeworkRes, coursesRes] = await Promise.all([
+      fetchMyHomework(),
+      http.get('/api/courses/my')
+    ])
+    list.value = homeworkRes.data || []
+    courses.value = coursesRes.data || []
   } catch (e) {
     ElNotification({
       title: '加载失败',
@@ -77,15 +107,25 @@ onMounted(load)
         <div class="title display">我的作业</div>
         <div class="subtitle">按课程查看教师布置的练习任务，按时完成更容易形成学习节奏</div>
       </div>
-      <el-segmented
-        v-model="filter"
-        :options="[
-          { label: '全部', value: 'all' },
-          { label: '进行中', value: 'active' },
-          { label: '已截止', value: 'expired' },
-          { label: '不限时', value: 'no-deadline' }
-        ]"
-      />
+      <div class="hero-tools">
+        <el-select v-model="selectedCourseId" clearable placeholder="全部课程" class="tool-select">
+          <el-option v-for="c in courses" :key="c.id" :label="c.title" :value="c.id" />
+        </el-select>
+        <el-select v-model="sortMode" class="tool-select">
+          <el-option label="截止时间升序" value="deadline-asc" />
+          <el-option label="截止时间降序" value="deadline-desc" />
+          <el-option label="总分降序" value="score-desc" />
+        </el-select>
+        <el-segmented
+          v-model="filter"
+          :options="[
+            { label: '全部', value: 'all' },
+            { label: '进行中', value: 'active' },
+            { label: '已截止', value: 'expired' },
+            { label: '不限时', value: 'no-deadline' }
+          ]"
+        />
+      </div>
     </div>
 
     <el-card shadow="never">
@@ -166,6 +206,17 @@ onMounted(load)
   gap: 10px;
 }
 
+.hero-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tool-select {
+  width: 168px;
+}
+
 .title {
   font-size: 22px;
   font-weight: 700;
@@ -216,9 +267,14 @@ onMounted(load)
     flex-direction: column;
     align-items: flex-start;
   }
+  .hero-tools {
+    width: 100%;
+  }
+  .tool-select {
+    width: 100%;
+  }
   .meta-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>
-

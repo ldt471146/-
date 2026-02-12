@@ -13,11 +13,15 @@ import com.example.back.mapper.EduCourseMapper;
 import com.example.back.mapper.EduHomeworkMapper;
 import com.example.back.mapper.EduHomeworkProblemMapper;
 import com.example.back.mapper.EduQuestionMapper;
+import com.example.back.mapper.EduQuestionRecordMapper;
 import com.example.back.service.HomeworkService;
 import com.example.back.util.SecurityUtil;
 import com.example.back.vo.HomeworkDetailVO;
 import com.example.back.vo.HomeworkItemVO;
 import com.example.back.vo.HomeworkProblemVO;
+import com.example.back.vo.HomeworkStatsVO;
+import com.example.back.entity.EduQuestionRecord;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,17 +44,20 @@ public class HomeworkServiceImpl implements HomeworkService {
     private final EduQuestionMapper questionMapper;
     private final EduHomeworkMapper homeworkMapper;
     private final EduHomeworkProblemMapper homeworkProblemMapper;
+    private final EduQuestionRecordMapper questionRecordMapper;
 
     public HomeworkServiceImpl(EduCourseMapper courseMapper,
                                EduCourseEnrollMapper enrollMapper,
                                EduQuestionMapper questionMapper,
                                EduHomeworkMapper homeworkMapper,
-                               EduHomeworkProblemMapper homeworkProblemMapper) {
+                               EduHomeworkProblemMapper homeworkProblemMapper,
+                               EduQuestionRecordMapper questionRecordMapper) {
         this.courseMapper = courseMapper;
         this.enrollMapper = enrollMapper;
         this.questionMapper = questionMapper;
         this.homeworkMapper = homeworkMapper;
         this.homeworkProblemMapper = homeworkProblemMapper;
+        this.questionRecordMapper = questionRecordMapper;
     }
 
     private Long requireUserId() {
@@ -141,6 +148,73 @@ public class HomeworkServiceImpl implements HomeworkService {
         }
         EduCourse course = requireTeacherCourse(homework.getCourseId(), teacherId);
         return buildDetail(homework, course);
+    }
+
+    @Override
+    public HomeworkStatsVO teacherStats(Long homeworkId) {
+        Long teacherId = requireUserId();
+        EduHomework homework = homeworkMapper.selectById(homeworkId);
+        if (homework == null) {
+            throw new IllegalArgumentException("作业不存在");
+        }
+        EduCourse course = requireTeacherCourse(homework.getCourseId(), teacherId);
+
+        List<EduHomeworkProblem> hwProblems = homeworkProblemMapper.selectList(new LambdaQueryWrapper<EduHomeworkProblem>()
+                .eq(EduHomeworkProblem::getHomeworkId, homeworkId));
+        List<Long> questionIds = hwProblems.stream().map(EduHomeworkProblem::getProblemId).collect(Collectors.toList());
+
+        int expectedStudents = Math.toIntExact(enrollMapper.selectCount(new LambdaQueryWrapper<EduCourseEnroll>()
+                .eq(EduCourseEnroll::getCourseId, course.getId())
+                .eq(EduCourseEnroll::getStatus, 1)));
+
+        HomeworkStatsVO stats = new HomeworkStatsVO();
+        stats.setExpectedStudents(expectedStudents);
+        stats.setActiveStudents(0);
+        stats.setSubmissionCount(0);
+        stats.setAccuracy(0D);
+        stats.setLastSubmitAt(null);
+
+        if (questionIds.isEmpty()) {
+            return stats;
+        }
+
+        List<EduCourseEnroll> enrolls = enrollMapper.selectList(new LambdaQueryWrapper<EduCourseEnroll>()
+                .eq(EduCourseEnroll::getCourseId, course.getId())
+                .eq(EduCourseEnroll::getStatus, 1));
+        List<Long> studentIds = enrolls.stream().map(EduCourseEnroll::getUserId).collect(Collectors.toList());
+        if (studentIds.isEmpty()) {
+            return stats;
+        }
+
+        QueryWrapper<EduQuestionRecord> distinctUserQw = new QueryWrapper<>();
+        distinctUserQw.select("DISTINCT user_id")
+                .in("user_id", studentIds)
+                .in("question_id", questionIds);
+        int activeStudents = questionRecordMapper.selectObjs(distinctUserQw).size();
+
+        Long submissionCountLong = questionRecordMapper.selectCount(new LambdaQueryWrapper<EduQuestionRecord>()
+                .in(EduQuestionRecord::getUserId, studentIds)
+                .in(EduQuestionRecord::getQuestionId, questionIds));
+        int submissionCount = submissionCountLong == null ? 0 : submissionCountLong.intValue();
+
+        Long correctCountLong = questionRecordMapper.selectCount(new LambdaQueryWrapper<EduQuestionRecord>()
+                .in(EduQuestionRecord::getUserId, studentIds)
+                .in(EduQuestionRecord::getQuestionId, questionIds)
+                .eq(EduQuestionRecord::getIsCorrect, 1));
+        int correctCount = correctCountLong == null ? 0 : correctCountLong.intValue();
+
+        EduQuestionRecord lastRecord = questionRecordMapper.selectOne(new LambdaQueryWrapper<EduQuestionRecord>()
+                .in(EduQuestionRecord::getUserId, studentIds)
+                .in(EduQuestionRecord::getQuestionId, questionIds)
+                .orderByDesc(EduQuestionRecord::getCreatedAt)
+                .last("LIMIT 1"));
+
+        double accuracy = submissionCount == 0 ? 0D : (correctCount * 100.0 / submissionCount);
+        stats.setActiveStudents(activeStudents);
+        stats.setSubmissionCount(submissionCount);
+        stats.setAccuracy(Math.round(accuracy * 100.0) / 100.0);
+        stats.setLastSubmitAt(lastRecord == null ? null : lastRecord.getCreatedAt());
+        return stats;
     }
 
     @Override
