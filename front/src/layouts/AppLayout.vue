@@ -18,7 +18,10 @@ import {
   UserFilled,
   Histogram,
   User,
-  DocumentChecked
+  DocumentChecked,
+  Lightning,
+  Compass,
+  MagicStick
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -37,6 +40,10 @@ const roleLabel = computed(() => {
   if (roles.includes('ADMIN')) return '管理员'
   if (roles.includes('TEACHER')) return '教师'
   return '学生'
+})
+const todayLabel = computed(() => {
+  const now = new Date()
+  return `${now.getMonth() + 1}月${now.getDate()}日`
 })
 const handleProfileUpdate = (e) => {
   const data = e?.detail || {}
@@ -258,6 +265,11 @@ const toggleTheme = () => {
             </div>
           </div>
           <div class="header-right">
+            <div class="header-chip">
+              <el-icon><Lightning /></el-icon>
+              <span>今日任务日</span>
+              <strong>{{ todayLabel }}</strong>
+            </div>
             <el-select
               v-model="quickRoute"
               class="quick-jump"
@@ -274,7 +286,12 @@ const toggleTheme = () => {
               online
             </div>
             <el-button class="theme-btn" size="small" @click="toggleTheme">
+              <el-icon><MagicStick /></el-icon>
               {{ theme === 'neon' ? '赛博红' : theme === 'red' ? '极光' : '霓虹' }}
+            </el-button>
+            <el-button class="route-btn" size="small" @click="router.push('/dashboard')">
+              <el-icon><Compass /></el-icon>
+              主页
             </el-button>
             <el-dropdown trigger="click">
               <div class="user-entry">
@@ -296,7 +313,9 @@ const toggleTheme = () => {
         </el-header>
 
         <el-main class="main">
-          <router-view />
+          <div class="content-shell">
+            <router-view />
+          </div>
         </el-main>
       </el-container>
     </el-container>
@@ -427,11 +446,26 @@ const toggleTheme = () => {
 .header {
   padding: 26px 26px;
   border-bottom: 1px solid var(--ui-border-soft);
-  background: var(--ui-surface);
+  background:
+    linear-gradient(180deg, rgba(86, 255, 213, 0.09), rgba(86, 255, 213, 0.01)),
+    var(--ui-surface);
   display: flex;
   align-items: center;
   justify-content: space-between;
   backdrop-filter: blur(8px);
+  position: relative;
+  overflow: hidden;
+}
+
+.header::after {
+  content: '';
+  position: absolute;
+  right: -60px;
+  top: -80px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(0, 210, 255, 0.16), transparent 70%);
+  pointer-events: none;
 }
 
 .header-left {
@@ -444,6 +478,24 @@ const toggleTheme = () => {
   display: flex;
   align-items: center;
   gap: 12px;
+  z-index: 1;
+}
+
+.header-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: var(--ui-text);
+  background: rgba(86, 255, 213, 0.08);
+  border: 1px solid var(--ui-border-soft);
+  font-size: 12px;
+}
+
+.header-chip strong {
+  color: var(--ui-accent);
+  font-weight: 700;
 }
 
 .status {
@@ -478,6 +530,12 @@ const toggleTheme = () => {
   border-radius: 999px;
   border: 1px solid var(--ui-border-soft);
   background: rgba(86, 255, 213, 0.05);
+  transition: all 0.2s ease;
+}
+
+.user-entry:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(2, 12, 24, 0.25);
 }
 
 .role-chip {
@@ -507,6 +565,22 @@ const toggleTheme = () => {
 
 .main {
   padding: 20px 22px;
+  background:
+    radial-gradient(circle at 92% 12%, rgba(86, 255, 213, 0.1), transparent 24%),
+    radial-gradient(circle at 15% 86%, rgba(0, 210, 255, 0.09), transparent 22%);
+}
+
+.content-shell {
+  min-height: calc(100vh - 140px);
+  border: 1px solid var(--ui-border-soft);
+  border-radius: 18px;
+  padding: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
+    var(--ui-surface-soft);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 36px rgba(1, 10, 22, 0.2);
 }
 
 :deep(.el-card) {
@@ -520,9 +594,21 @@ const toggleTheme = () => {
 }
 
 .theme-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 1px solid var(--ui-border);
   color: var(--ui-text);
   background: rgba(86, 255, 213, 0.06);
+}
+
+.route-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--ui-border-soft);
+  color: var(--ui-text);
+  background: rgba(0, 210, 255, 0.05);
 }
 
 :deep(.el-menu-item) {
@@ -594,6 +680,10 @@ const toggleTheme = () => {
 }
 
 @media (max-width: 960px) {
+  .header-chip,
+  .route-btn {
+    display: none;
+  }
   .quick-jump {
     display: none;
   }
