@@ -649,6 +649,99 @@ const toggleTheme = () => {
   pointer-events: none;
 }
 
+:deep(.content-shell > .page),
+:deep(.content-shell > .profile-page),
+:deep(.content-shell > .code-page) {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0)),
+    rgba(6, 16, 28, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  animation: pageIn 0.28s ease;
+}
+
+:deep(.content-shell > .page::before),
+:deep(.content-shell > .profile-page::before),
+:deep(.content-shell > .code-page::before) {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(86, 255, 213, 0.55), transparent);
+  pointer-events: none;
+}
+
+:deep(.content-shell .hero),
+:deep(.content-shell .page-head),
+:deep(.content-shell .toolbar),
+:deep(.content-shell .panel),
+:deep(.content-shell .problem-panel),
+:deep(.content-shell .tab-bar),
+:deep(.content-shell .stats-card),
+:deep(.content-shell .chart-card) {
+  border-radius: 14px;
+  border: 1px solid var(--ui-border-soft);
+  box-shadow: 0 10px 24px rgba(2, 12, 24, 0.14);
+}
+
+:deep(.content-shell .title) {
+  text-wrap: balance;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+:deep(.content-shell .subtitle) {
+  letter-spacing: 0.01em;
+}
+
+:deep(.content-shell .hero),
+:deep(.content-shell .page-head) {
+  position: relative;
+  overflow: hidden;
+}
+
+:deep(.content-shell .hero::after),
+:deep(.content-shell .page-head::after) {
+  content: '';
+  position: absolute;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  right: -70px;
+  top: -70px;
+  background: radial-gradient(circle, rgba(0, 210, 255, 0.14), transparent 72%);
+  pointer-events: none;
+}
+
+:deep(.content-shell .list .item),
+:deep(.content-shell .course-item),
+:deep(.content-shell .focus-item),
+:deep(.content-shell .list-item) {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+:deep(.content-shell .list .item:hover),
+:deep(.content-shell .course-item:hover),
+:deep(.content-shell .focus-item:hover),
+:deep(.content-shell .list-item:hover) {
+  transform: translateY(-2px);
+  border-color: var(--ui-border);
+  box-shadow: 0 10px 20px rgba(2, 12, 24, 0.18);
+}
+
+:deep(.content-shell .pager) {
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+:deep(.content-shell .el-empty) {
+  padding: 18px 0;
+}
+
 :deep(.el-card) {
   background: var(--ui-card);
   border: 1px solid var(--ui-border-soft);
@@ -834,6 +927,17 @@ const toggleTheme = () => {
   from {
     opacity: 0.76;
     transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
   }
   to {
     opacity: 1;
