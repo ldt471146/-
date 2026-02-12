@@ -566,7 +566,11 @@ const toggleTheme = () => {
 .title {
   font-size: 22px;
   font-weight: 600;
-  padding-top: 0;
+  padding-top: 6px;
+  line-height: 1.55;
+  font-family: var(--font-main);
+  letter-spacing: 0.01em;
+  overflow: visible;
 }
 
 .subtitle {
