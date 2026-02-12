@@ -81,6 +81,7 @@ const activeMenu = computed(() => {
   if (path.startsWith('/courses')) return '/courses'
   if (path.startsWith('/practice')) return '/practice'
   if (path.startsWith('/code-practice')) return '/code-practice'
+  if (path.startsWith('/learning-path')) return '/learning-path'
   if (path.startsWith('/reports')) return '/reports'
   if (path.startsWith('/exams')) return '/exams'
   if (path.startsWith('/notices')) return '/notices'
@@ -100,6 +101,7 @@ const quickOptions = computed(() => {
     { label: '我的课程', value: '/courses' },
     { label: '题库练习', value: '/practice' },
     { label: '编程判题', value: '/code-practice' },
+    { label: '学习路径', value: '/learning-path' },
     { label: '在线考试', value: '/exams' },
     { label: `消息通知${unread.value > 0 ? ` (${unread.value})` : ''}`, value: '/notices' },
     { label: '成长报告', value: '/reports' }
@@ -151,6 +153,7 @@ const toggleTheme = () => {
             <el-menu-item index="/courses">我的课程</el-menu-item>
             <el-menu-item index="/practice">题库练习</el-menu-item>
             <el-menu-item index="/code-practice">编程判题</el-menu-item>
+            <el-menu-item index="/learning-path">学习路径</el-menu-item>
           </el-sub-menu>
           <el-menu-item index="/exams">
             <span class="menu-dot"></span>

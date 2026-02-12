@@ -5,6 +5,7 @@ import Courses from '../pages/Courses.vue'
 import CourseDetail from '../pages/CourseDetail.vue'
 import Practice from '../pages/Practice.vue'
 import CodePractice from '../pages/CodePractice.vue'
+import LearningPath from '../pages/LearningPath.vue'
 import Reports from '../pages/Reports.vue'
 import Exams from '../pages/Exams.vue'
 import Profile from '../pages/Profile.vue'
@@ -33,6 +34,7 @@ const routes = [
       { path: 'courses/:id', component: CourseDetail },
       { path: 'practice', component: Practice },
       { path: 'code-practice', component: CodePractice },
+      { path: 'learning-path', component: LearningPath },
       { path: 'profile', component: Profile },
       { path: 'notices', component: Notices },
       { path: 'reports', component: Reports },

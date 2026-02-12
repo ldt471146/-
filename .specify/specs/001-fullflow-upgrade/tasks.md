@@ -71,12 +71,12 @@
 **Goal**: 根据知识点依赖为学生提供阶梯式路径推荐。  
 **Independent Test**: 配置依赖后，学生完成前置节点可解锁后续节点并展示推荐下一步。
 
-- [ ] T401 [Todo] [US4] 新增知识点实体与关系实体 `back/src/main/java/com/example/back/entity/EduKnowledgePoint.java`, `EduKnowledgeDependency.java`
-- [ ] T402 [Todo] [US4] 新增用户知识点进度实体 `back/src/main/java/com/example/back/entity/EduKnowledgeProgress.java`
-- [ ] T403 [Todo] [US4] 新增知识点维护接口（教师）`back/src/main/java/com/example/back/controller/TeacherKnowledgeController.java`
-- [ ] T404 [Todo] [US4] 新增路径推荐服务（拓扑/可学习节点计算）`back/src/main/java/com/example/back/service/impl/LearningPathServiceImpl.java`
-- [ ] T405 [Todo] [US4] 新增学生路径查询接口 `back/src/main/java/com/example/back/controller/LearningPathController.java`
-- [ ] T406 [Todo] [US4] 前端学习中心新增路径面板 `front/src/pages/CourseDetail.vue` 或新建 `front/src/pages/LearningPath.vue`
+- [x] T401 [Done] [US4] 新增知识点实体与关系实体 `back/src/main/java/com/example/back/entity/EduKnowledgePoint.java`, `EduKnowledgeDependency.java`
+- [x] T402 [Done] [US4] 新增用户知识点进度实体 `back/src/main/java/com/example/back/entity/EduKnowledgeProgress.java`
+- [x] T403 [Done] [US4] 新增知识点维护接口（教师）`back/src/main/java/com/example/back/controller/TeacherKnowledgeController.java`
+- [x] T404 [Done] [US4] 新增路径推荐服务（依赖解锁规则）`back/src/main/java/com/example/back/service/impl/LearningPathServiceImpl.java`
+- [x] T405 [Done] [US4] 新增学生路径查询接口 `back/src/main/java/com/example/back/controller/LearningPathController.java`
+- [x] T406 [Done] [US4] 前端学习路径页与课程页入口 `front/src/pages/LearningPath.vue`, `front/src/pages/CourseDetail.vue`
 
 ---
 

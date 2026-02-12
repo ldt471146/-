@@ -151,6 +151,10 @@ const goPractice = () => {
   router.push('/practice')
 }
 
+const goLearningPath = () => {
+  router.push({ path: '/learning-path', query: { courseId: route.params.id } })
+}
+
 const formatDate = (val) => {
   if (!val) return '-'
   const d = new Date(val)
@@ -242,6 +246,7 @@ onBeforeUnmount(() => {
               继续学习
             </el-button>
                 <el-button plain @click="goPractice">去题库练习</el-button>
+                <el-button plain @click="goLearningPath">学习路径</el-button>
                 <span v-if="resumeLessonId" class="resume-text">已定位到最近未完成课时</span>
               </div>
             </div>
@@ -349,6 +354,7 @@ onBeforeUnmount(() => {
                 完成
               </el-button>
               <el-button size="small" plain @click="goPractice">去题库练习</el-button>
+              <el-button size="small" plain @click="goLearningPath">学习路径</el-button>
             </div>
           </div>
         </div>
