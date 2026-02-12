@@ -127,12 +127,13 @@ const toggle = () => {
 
 const onPanelMouseDown = (e) => {
   draggingPanel.value = true
+  e.preventDefault()
   const panel = e.currentTarget.closest('.ai-panel')
   if (!panel) return
   const rect = panel.getBoundingClientRect()
   panelOffset.value = { x: e.clientX - rect.left, y: e.clientY - rect.top }
-  document.addEventListener('mousemove', onPanelMouseMove)
-  document.addEventListener('mouseup', onPanelMouseUp)
+  document.addEventListener('pointermove', onPanelMouseMove)
+  document.addEventListener('pointerup', onPanelMouseUp)
 }
 
 const onPanelMouseMove = (e) => {
@@ -148,15 +149,16 @@ const onPanelMouseMove = (e) => {
 
 const onPanelMouseUp = () => {
   draggingPanel.value = false
-  document.removeEventListener('mousemove', onPanelMouseMove)
-  document.removeEventListener('mouseup', onPanelMouseUp)
+  document.removeEventListener('pointermove', onPanelMouseMove)
+  document.removeEventListener('pointerup', onPanelMouseUp)
 }
 
 const onResizeDown = (e) => {
   resizing.value = true
+  e.preventDefault()
   resizeStart.value = { x: e.clientX, y: e.clientY, w: panelSize.value.w, h: panelSize.value.h }
-  document.addEventListener('mousemove', onResizing)
-  document.addEventListener('mouseup', onResizeUp)
+  document.addEventListener('pointermove', onResizing)
+  document.addEventListener('pointerup', onResizeUp)
 }
 
 const onResizing = (e) => {
@@ -170,16 +172,17 @@ const onResizing = (e) => {
 
 const onResizeUp = () => {
   resizing.value = false
-  document.removeEventListener('mousemove', onResizing)
-  document.removeEventListener('mouseup', onResizeUp)
+  document.removeEventListener('pointermove', onResizing)
+  document.removeEventListener('pointerup', onResizeUp)
 }
 
 const onBallDown = (e) => {
   draggingBall.value = true
   movedBall.value = false
+  e.preventDefault()
   ballOffset.value = { x: e.clientX - ball.value.x, y: e.clientY - ball.value.y }
-  document.addEventListener('mousemove', onBallMove)
-  document.addEventListener('mouseup', onBallUp)
+  document.addEventListener('pointermove', onBallMove)
+  document.addEventListener('pointerup', onBallUp)
 }
 
 const onBallMove = (e) => {
@@ -198,8 +201,8 @@ const onBallMove = (e) => {
 
 const onBallUp = () => {
   draggingBall.value = false
-  document.removeEventListener('mousemove', onBallMove)
-  document.removeEventListener('mouseup', onBallUp)
+  document.removeEventListener('pointermove', onBallMove)
+  document.removeEventListener('pointerup', onBallUp)
   setTimeout(() => {
     movedBall.value = false
   }, 80)
@@ -248,12 +251,12 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   clearTimers()
-  document.removeEventListener('mousemove', onPanelMouseMove)
-  document.removeEventListener('mouseup', onPanelMouseUp)
-  document.removeEventListener('mousemove', onBallMove)
-  document.removeEventListener('mouseup', onBallUp)
-  document.removeEventListener('mousemove', onResizing)
-  document.removeEventListener('mouseup', onResizeUp)
+  document.removeEventListener('pointermove', onPanelMouseMove)
+  document.removeEventListener('pointerup', onPanelMouseUp)
+  document.removeEventListener('pointermove', onBallMove)
+  document.removeEventListener('pointerup', onBallUp)
+  document.removeEventListener('pointermove', onResizing)
+  document.removeEventListener('pointerup', onResizeUp)
   window.removeEventListener('resize', onResize)
 })
 </script>
@@ -263,7 +266,7 @@ onBeforeUnmount(() => {
     <button
       class="ai-avatar-btn"
       :style="{ left: `${ball.x}px`, top: `${ball.y}px` }"
-      @mousedown="onBallDown"
+      @pointerdown.prevent="onBallDown"
       @click="toggle"
       :aria-label="open ? '关闭助手' : '打开助手'"
     >
@@ -289,7 +292,7 @@ onBeforeUnmount(() => {
         height: `${panelSize.h}px`
       }"
     >
-      <div class="ai-header" @mousedown="onPanelMouseDown">
+      <div class="ai-header" @pointerdown.prevent="onPanelMouseDown">
         <img class="header-avatar" :src="avatarMain" alt="assistant-mini" />
         <div class="header-meta">
           <div class="ai-title">二次元编程助手</div>
@@ -316,7 +319,7 @@ onBeforeUnmount(() => {
         <button class="ai-send" @click="send">发送</button>
       </div>
 
-      <div class="ai-resize-handle" @mousedown="onResizeDown"></div>
+      <div class="ai-resize-handle" @pointerdown.prevent="onResizeDown"></div>
     </div>
   </div>
 </template>
@@ -342,6 +345,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
   padding: 0;
   animation: floatY 4.2s ease-in-out infinite;
+  touch-action: none;
 }
 
 .avatar-aura {
@@ -409,6 +413,7 @@ onBeforeUnmount(() => {
   background: linear-gradient(120deg, rgba(124, 225, 255, 0.16), rgba(88, 255, 204, 0.12));
   cursor: move;
   user-select: none;
+  touch-action: none;
 }
 
 .header-avatar {
@@ -513,6 +518,7 @@ onBeforeUnmount(() => {
   border-right: 2px solid rgba(120, 224, 255, 0.7);
   border-bottom: 2px solid rgba(120, 224, 255, 0.7);
   cursor: se-resize;
+  touch-action: none;
 }
 
 @keyframes floatY {
@@ -525,4 +531,3 @@ onBeforeUnmount(() => {
   50% { opacity: 0.9; transform: scale(1.04); }
 }
 </style>
-
