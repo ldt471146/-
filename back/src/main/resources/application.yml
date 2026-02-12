@@ -12,9 +12,8 @@ spring:
   # ======================
   mail:
     host: smtp.163.com
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
-    from: ${MAIL_FROM:${MAIL_USERNAME:}}
+    username: 19710119320@163.com
+    password: TPnuuWfPm528cmk8
     port: 465
     properties:
       mail:
@@ -27,10 +26,10 @@ spring:
   # RabbitMQ
   # ======================
   rabbitmq:
-    addresses: ${RABBITMQ_ADDRESSES:localhost}
-    username: ${RABBITMQ_USERNAME:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
-    virtual-host: ${RABBITMQ_VHOST:/}
+    addresses: 192.168.109.129
+    username: admin
+    password: admin
+    virtual-host: /
     listener:
       simple:
         acknowledge-mode: auto
@@ -48,19 +47,14 @@ spring:
   # 数据源
   # ======================
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/online?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:123456}
+    url: jdbc:mysql://localhost:3306/online?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   # ======================
   # Redis（无密码）
   # ======================
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
 
 
   # ======================
@@ -68,9 +62,9 @@ spring:
   # ======================
   security:
     jwt:
-      key: ${JWT_KEY:please-change-this-jwt-key}
-      expire: ${JWT_EXPIRE_HOURS:72}
-      remember-expire: ${JWT_REMEMBER_EXPIRE_HOURS:168}
+      key: 'abcdefghijklmn'
+      expire: 72
+      remember-expire: 168
       limit:
         base: 10
         upgrade: 300
@@ -95,13 +89,13 @@ spring:
       methods: '*'
 
   minio:
-    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
-    username: ${MINIO_USERNAME:minio}
-    password: ${MINIO_PASSWORD:minio123}
+    endpoint: http://192.168.109.129:9000
+    username: minio
+    password: password
 
   weather:
-    key: ${WEATHER_KEY:}
-    api-host: ${WEATHER_API_HOST:}
+    key: 136482f1f2d04948bd90e00cf6850a2e
+    api-host: 'kv487n5dxd.re.qweatherapi.com'
 
 mybatis-plus:
   configuration:
@@ -129,10 +123,10 @@ local-judge:
 # AI Assistant
 # ======================
 ai:
-  base-url: ${AI_BASE_URL:https://yunwu.ai/v1}
-  api-key: ${AI_API_KEY:}
+  base-url: https://yunwu.ai/v1
+  api-key: sk-MjqazUz9QAJWLvRXMSH6yHyRzdr5w5XJelTYEXgPT2CQrWd7
 
-  model: ${AI_MODEL:gpt-4o-mini}
+  model: gpt-4o-mini
   fallback-models:
     - gpt-4.1-mini
     - gpt-4o
