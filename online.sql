@@ -826,6 +826,8 @@ CREATE TABLE `sys_user`  (
   `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `status` tinyint(0) NOT NULL DEFAULT 1,
+  `mute_status` tinyint(0) NOT NULL DEFAULT 0,
+  `ban_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `created_at` datetime(0) NOT NULL,
   `updated_at` datetime(0) NOT NULL,
   `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
@@ -836,12 +838,12 @@ CREATE TABLE `sys_user`  (
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 'kagema12', '$2a$10$8lpkN0nqJ5oF.0rwoMZ9l.mbeASdlXsGvJ5qfSIZ5TExar4LVpBeq', '2522086087@qq.com', '19710119320', 'https://pic2.zhimg.com/v2-8d3f288feae0e511dee5c3d6735ca999_1440w.jpg', 1, '2026-02-05 19:35:00', '2026-02-05 19:35:00', 0);
-INSERT INTO `sys_user` VALUES (3, '吕老师', '$2a$10$tVsPDcdUFQjuCm8MvVrPRuKhCxqX.lXOvCoyax116hxr0uykmD7ta', '19710119320@163.com', NULL, NULL, 1, '2026-02-06 15:14:40', '2026-02-06 15:14:40', 0);
-INSERT INTO `sys_user` VALUES (4, '临时老师', '$2a$10$B4K02OPD.GsTGCA6EYGKFOioQcBn2S.H5KifMUG2GvWG0YdCbPJwS', '854riva@virgilian.com', NULL, NULL, 1, '2026-02-06 15:22:55', '2026-02-06 15:22:55', 0);
-INSERT INTO `sys_user` VALUES (5, '测试用户2', '$2a$10$qCSa9ZUm/Im0sxm4vgEXJeYDqlKzzdoxoyCzHvnucW.mOKsfDOOUK', 'mlakd7uvnoew@ibymail.com', NULL, NULL, 1, '2026-02-06 15:29:35', '2026-02-06 15:29:35', 0);
-INSERT INTO `sys_user` VALUES (8, '吕老师1', '$2a$10$ucIYfmCiUEofKjH6F3DKh..Ok4.ya1sGFoesb01NvXr7zU93jw8Zi', 'mlakjaacxlru@ibymail.com', NULL, NULL, 1, '2026-02-06 15:35:26', '2026-02-06 15:35:26', 0);
-INSERT INTO `sys_user` VALUES (9, '测试一号', '$2a$10$48BMMdf69xW1/pg9cbUfbu.UvOt5o9Bs42tj21GrnXVQvc.gss7Jq', '3497986240@qq.com', NULL, NULL, 1, '2026-02-06 15:42:58', '2026-02-06 15:42:58', 0);
+INSERT INTO `sys_user` VALUES (1, 'kagema12', '$2a$10$8lpkN0nqJ5oF.0rwoMZ9l.mbeASdlXsGvJ5qfSIZ5TExar4LVpBeq', '2522086087@qq.com', '19710119320', 'https://pic2.zhimg.com/v2-8d3f288feae0e511dee5c3d6735ca999_1440w.jpg', 1, 0, NULL, '2026-02-05 19:35:00', '2026-02-05 19:35:00', 0);
+INSERT INTO `sys_user` VALUES (3, '吕老师', '$2a$10$tVsPDcdUFQjuCm8MvVrPRuKhCxqX.lXOvCoyax116hxr0uykmD7ta', '19710119320@163.com', NULL, NULL, 1, 0, NULL, '2026-02-06 15:14:40', '2026-02-06 15:14:40', 0);
+INSERT INTO `sys_user` VALUES (4, '临时老师', '$2a$10$B4K02OPD.GsTGCA6EYGKFOioQcBn2S.H5KifMUG2GvWG0YdCbPJwS', '854riva@virgilian.com', NULL, NULL, 1, 0, NULL, '2026-02-06 15:22:55', '2026-02-06 15:22:55', 0);
+INSERT INTO `sys_user` VALUES (5, '测试用户2', '$2a$10$qCSa9ZUm/Im0sxm4vgEXJeYDqlKzzdoxoyCzHvnucW.mOKsfDOOUK', 'mlakd7uvnoew@ibymail.com', NULL, NULL, 1, 0, NULL, '2026-02-06 15:29:35', '2026-02-06 15:29:35', 0);
+INSERT INTO `sys_user` VALUES (8, '吕老师1', '$2a$10$ucIYfmCiUEofKjH6F3DKh..Ok4.ya1sGFoesb01NvXr7zU93jw8Zi', 'mlakjaacxlru@ibymail.com', NULL, NULL, 1, 0, NULL, '2026-02-06 15:35:26', '2026-02-06 15:35:26', 0);
+INSERT INTO `sys_user` VALUES (9, '测试一号', '$2a$10$48BMMdf69xW1/pg9cbUfbu.UvOt5o9Bs42tj21GrnXVQvc.gss7Jq', '3497986240@qq.com', NULL, NULL, 1, 0, NULL, '2026-02-06 15:42:58', '2026-02-06 15:42:58', 0);
 
 -- ----------------------------
 -- Table structure for sys_user_role

@@ -15,8 +15,9 @@ public class AdminUserVO {
     private String email;
     private String phone;
     private Integer status;
+    private Integer muteStatus;
+    private String banReason;
     private List<String> roles;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
-

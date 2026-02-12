@@ -135,10 +135,11 @@ public class AdminUserController {
         vo.setEmail(user.getEmail());
         vo.setPhone(user.getPhone());
         vo.setStatus(user.getStatus());
+        vo.setMuteStatus(user.getMuteStatus());
+        vo.setBanReason(user.getBanReason());
         vo.setRoles(roleMapper.selectRoleCodesByUserId(user.getId()));
         vo.setCreatedAt(user.getCreatedAt());
         vo.setUpdatedAt(user.getUpdatedAt());
         return vo;
     }
 }
-

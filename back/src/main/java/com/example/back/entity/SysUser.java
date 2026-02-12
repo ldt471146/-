@@ -46,4 +46,14 @@ public class SysUser extends BaseEntity {
      * 状态：1-正常，0-禁用
      */
     private Integer status;
+
+    /**
+     * 禁言状态：0-正常，1-禁言
+     */
+    private Integer muteStatus;
+
+    /**
+     * 封禁/禁言原因
+     */
+    private String banReason;
 }

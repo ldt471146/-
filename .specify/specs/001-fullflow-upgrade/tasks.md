@@ -58,7 +58,7 @@
 **Independent Test**: 管理员完成账号状态变更、课程审核、违规内容处理并验证生效。
 
 - [x] T301 [Done] [US3] 教师申请审核流程 `back/.../AdminTeacherApplyController.java`, `front/src/pages/AdminTeacherApply.vue`
-- [ ] T302 [Todo] [US3] 新增用户管理实体字段（禁言状态、封禁原因）`back/src/main/java/com/example/back/entity/SysUser.java`, `online.sql`
+- [x] T302 [Done] [US3] 新增用户管理实体字段（禁言状态、封禁原因）`back/src/main/java/com/example/back/entity/SysUser.java`, `online.sql`
 - [x] T303 [Done] [US3] 新增管理员用户管理接口（列表、禁用、启用、角色调整）`back/src/main/java/com/example/back/controller/AdminUserController.java`
 - [x] T304 [Done] [US3] 新增课程审核接口（基于课程上/下架状态）`back/src/main/java/com/example/back/controller/AdminCourseController.java`
 - [x] T305 [Done] [US3] 前端新增管理员用户管理页 `front/src/pages/AdminUsers.vue`
