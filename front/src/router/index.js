@@ -13,6 +13,7 @@ import TeacherDashboard from '../pages/TeacherDashboard.vue'
 import TeacherCourseDetail from '../pages/TeacherCourseDetail.vue'
 import TeacherQuestions from '../pages/TeacherQuestions.vue'
 import TeacherExams from '../pages/TeacherExams.vue'
+import TeacherStats from '../pages/TeacherStats.vue'
 import AdminTeacherApply from '../pages/AdminTeacherApply.vue'
 import AppLayout from '../layouts/AppLayout.vue'
 import { getToken } from '../utils/auth'
@@ -37,6 +38,7 @@ const routes = [
       { path: 'teacher', component: TeacherDashboard },
       { path: 'teacher/questions', component: TeacherQuestions },
       { path: 'teacher/exams', component: TeacherExams },
+      { path: 'teacher/stats', component: TeacherStats },
       { path: 'teacher/courses/:id', component: TeacherCourseDetail },
       { path: 'admin/teacher-apply', component: AdminTeacherApply }
     ]

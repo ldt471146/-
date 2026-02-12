@@ -10,6 +10,7 @@ import com.example.back.vo.CourseDetailVO;
 import com.example.back.vo.PageResultVO;
 import com.example.back.vo.QuestionVO;
 import com.example.back.vo.TeacherCourseVO;
+import com.example.back.vo.TeacherStatsOverviewVO;
 
 import java.util.List;
 
@@ -57,4 +58,8 @@ public interface TeacherService {
     void updateCodeProblem(Long id, TeacherCodeProblemRequest request);
 
     void deleteCodeProblem(Long id);
+
+    TeacherStatsOverviewVO statsOverview();
+
+    byte[] exportStatsCsv(String type);
 }

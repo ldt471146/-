@@ -85,6 +85,7 @@ const activeMenu = computed(() => {
   if (path.startsWith('/exams')) return '/exams'
   if (path.startsWith('/notices')) return '/notices'
   if (path.startsWith('/profile')) return '/profile'
+  if (path.startsWith('/teacher/stats')) return '/teacher/stats'
   if (path.startsWith('/teacher')) return '/teacher'
   if (path.startsWith('/admin')) return '/admin/teacher-apply'
   return path
@@ -102,6 +103,7 @@ const quickOptions = computed(() => {
     { label: '成长报告', value: '/reports' }
   ]
   if (isTeacher.value) items.push({ label: '教师端', value: '/teacher' })
+  if (isTeacher.value) items.push({ label: '教学统计', value: '/teacher/stats' })
   if (isAdmin.value) items.push({ label: '教师审核', value: '/admin/teacher-apply' })
   return items
 })
@@ -167,6 +169,7 @@ const toggleTheme = () => {
               管理工作台
             </template>
             <el-menu-item v-if="isTeacher" index="/teacher">教师端</el-menu-item>
+            <el-menu-item v-if="isTeacher" index="/teacher/stats">教学统计</el-menu-item>
             <el-menu-item v-if="isAdmin" index="/admin/teacher-apply">教师审核</el-menu-item>
           </el-sub-menu>
         </el-menu>

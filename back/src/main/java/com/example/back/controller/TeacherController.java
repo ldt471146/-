@@ -12,7 +12,12 @@ import com.example.back.vo.CourseDetailVO;
 import com.example.back.vo.PageResultVO;
 import com.example.back.vo.QuestionVO;
 import com.example.back.vo.TeacherCourseVO;
+import com.example.back.vo.TeacherStatsOverviewVO;
 import jakarta.validation.Valid;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -155,5 +160,20 @@ public class TeacherController {
     public ApiResponse<Void> deleteCodeProblem(@PathVariable("id") Long id) {
         teacherService.deleteCodeProblem(id);
         return ApiResponse.ok();
+    }
+
+    @GetMapping("/stats/overview")
+    public ApiResponse<TeacherStatsOverviewVO> statsOverview() {
+        return ApiResponse.ok(teacherService.statsOverview());
+    }
+
+    @GetMapping("/stats/export")
+    public ResponseEntity<byte[]> exportStats(@RequestParam(value = "type", defaultValue = "students") String type) {
+        byte[] data = teacherService.exportStatsCsv(type);
+        String filename = "teacher-stats-" + type + ".csv";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("text/csv; charset=UTF-8"));
+        headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
+        return ResponseEntity.ok().headers(headers).body(data);
     }
 }

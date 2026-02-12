@@ -143,6 +143,10 @@ const goExams = () => {
   router.push('/teacher/exams')
 }
 
+const goStats = () => {
+  router.push('/teacher/stats')
+}
+
 const statusLabel = computed(() => (s) => (s === 1 ? '上架' : '下架'))
 
 onMounted(load)
@@ -156,6 +160,7 @@ onMounted(load)
     </div>
 
     <div class="toolbar">
+      <el-button native-type="button" @click="goStats">教学统计</el-button>
       <el-button native-type="button" @click="goExams">考试任务</el-button>
       <el-button native-type="button" @click="goQuestionBank">题库管理</el-button>
       <el-button native-type="button" type="primary" @click="openCreate">新建课程</el-button>

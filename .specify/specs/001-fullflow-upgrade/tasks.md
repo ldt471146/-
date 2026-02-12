@@ -45,10 +45,10 @@
 - [x] T201 [Done] [US2] 教师课程/章节/课时管理 `back/.../TeacherController.java`, `front/src/pages/TeacherDashboard.vue`
 - [x] T202 [Done] [US2] 教师题库/编程题管理 `back/.../TeacherServiceImpl.java`, `front/src/pages/TeacherQuestions.vue`
 - [x] T203 [Done] [US2] 教师考试任务发布与删除 `back/.../TeacherExamTaskController.java`, `front/src/pages/TeacherExams.vue`
-- [ ] T204 [Todo] [US2] 新增班级维度统计 API（学习时长、得分榜、通过率）`back/src/main/java/com/example/back/controller/TeacherStatsController.java`
-- [ ] T205 [Todo] [US2] 新增统计服务与 Mapper 查询 `back/src/main/java/com/example/back/service/impl/TeacherStatsServiceImpl.java`
-- [ ] T206 [Todo] [US2] 新增导出 CSV/Excel 功能 `back/src/main/java/com/example/back/controller/TeacherStatsController.java`
-- [ ] T207 [Todo] [US2] 前端新增教师统计页与图表展示 `front/src/pages/TeacherStats.vue`, `front/src/router/index.js`
+- [x] T204 [Done] [US2] 新增教师统计 API（学习时长、得分榜、通过率）`back/src/main/java/com/example/back/controller/TeacherController.java`
+- [x] T205 [Done] [US2] 新增统计服务与 Mapper 查询 `back/src/main/java/com/example/back/service/impl/TeacherServiceImpl.java`, `back/src/main/java/com/example/back/mapper/TeacherStatsMapper.java`
+- [x] T206 [Done] [US2] 新增导出 CSV 功能 `back/src/main/java/com/example/back/controller/TeacherController.java`
+- [x] T207 [Done] [US2] 前端新增教师统计页与入口 `front/src/pages/TeacherStats.vue`, `front/src/router/index.js`
 
 ---
 

@@ -25,6 +25,7 @@ import com.example.back.mapper.EduCourseMapper;
 import com.example.back.mapper.EduLessonMapper;
 import com.example.back.mapper.EduQuestionMapper;
 import com.example.back.mapper.EduQuestionOptionMapper;
+import com.example.back.mapper.TeacherStatsMapper;
 import com.example.back.service.TeacherService;
 import com.example.back.util.SecurityUtil;
 import com.example.back.vo.ChapterVO;
@@ -32,9 +33,14 @@ import com.example.back.vo.CourseDetailVO;
 import com.example.back.vo.LessonVO;
 import com.example.back.vo.PageResultVO;
 import com.example.back.vo.TeacherCourseVO;
+import com.example.back.vo.TeacherCourseStatVO;
+import com.example.back.vo.TeacherExamStatVO;
+import com.example.back.vo.TeacherStatsOverviewVO;
+import com.example.back.vo.TeacherStudentRankVO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +59,7 @@ public class TeacherServiceImpl implements TeacherService {
     private final EduQuestionOptionMapper optionMapper;
     private final EduCodeProblemMapper codeProblemMapper;
     private final EduCodeTestcaseMapper codeTestcaseMapper;
+    private final TeacherStatsMapper teacherStatsMapper;
 
     public TeacherServiceImpl(EduCourseMapper courseMapper,
                               EduChapterMapper chapterMapper,
@@ -60,7 +67,8 @@ public class TeacherServiceImpl implements TeacherService {
                               EduQuestionMapper questionMapper,
                               EduQuestionOptionMapper optionMapper,
                               EduCodeProblemMapper codeProblemMapper,
-                              EduCodeTestcaseMapper codeTestcaseMapper) {
+                              EduCodeTestcaseMapper codeTestcaseMapper,
+                              TeacherStatsMapper teacherStatsMapper) {
         this.courseMapper = courseMapper;
         this.chapterMapper = chapterMapper;
         this.lessonMapper = lessonMapper;
@@ -68,6 +76,7 @@ public class TeacherServiceImpl implements TeacherService {
         this.optionMapper = optionMapper;
         this.codeProblemMapper = codeProblemMapper;
         this.codeTestcaseMapper = codeTestcaseMapper;
+        this.teacherStatsMapper = teacherStatsMapper;
     }
 
     private Long requireTeacherId() {
@@ -713,5 +722,74 @@ public class TeacherServiceImpl implements TeacherService {
             }).collect(Collectors.toList()));
             return vo;
         }).collect(Collectors.toList());
+    }
+
+    @Override
+    public TeacherStatsOverviewVO statsOverview() {
+        Long teacherId = requireTeacherId();
+        Integer totalCourses = teacherStatsMapper.countCourses(teacherId);
+        Integer totalStudents = teacherStatsMapper.countStudents(teacherId);
+        Integer totalSubmissions = teacherStatsMapper.countSubmissions(teacherId);
+        Double avgScore = teacherStatsMapper.avgScore(teacherId);
+        List<TeacherStudentRankVO> ranks = teacherStatsMapper.studentRanks(teacherId);
+        List<TeacherCourseStatVO> courseStats = teacherStatsMapper.courseStats(teacherId);
+        List<TeacherExamStatVO> examStats = teacherStatsMapper.examStats(teacherId);
+
+        TeacherStatsOverviewVO vo = new TeacherStatsOverviewVO();
+        vo.setTotalCourses(totalCourses == null ? 0 : totalCourses);
+        vo.setTotalStudents(totalStudents == null ? 0 : totalStudents);
+        vo.setTotalSubmissions(totalSubmissions == null ? 0 : totalSubmissions);
+        vo.setAvgScore(avgScore == null ? 0 : avgScore);
+        vo.setStudentRanks(ranks == null ? List.of() : ranks);
+        vo.setCourseStats(courseStats == null ? List.of() : courseStats);
+        vo.setExamStats(examStats == null ? List.of() : examStats);
+        return vo;
+    }
+
+    @Override
+    public byte[] exportStatsCsv(String type) {
+        TeacherStatsOverviewVO overview = statsOverview();
+        String mode = type == null ? "students" : type.trim().toLowerCase();
+        StringBuilder sb = new StringBuilder();
+        if ("courses".equals(mode)) {
+            sb.append("courseId,courseTitle,studentCount,avgScore,totalLearnMinutes\n");
+            for (TeacherCourseStatVO row : overview.getCourseStats()) {
+                sb.append(csv(row.getCourseId()))
+                        .append(',').append(csv(row.getCourseTitle()))
+                        .append(',').append(csv(row.getStudentCount()))
+                        .append(',').append(csv(row.getAvgScore()))
+                        .append(',').append(csv(row.getTotalLearnMinutes()))
+                        .append('\n');
+            }
+        } else if ("tasks".equals(mode)) {
+            sb.append("taskId,taskTitle,attempts,passCount,passRate\n");
+            for (TeacherExamStatVO row : overview.getExamStats()) {
+                sb.append(csv(row.getTaskId()))
+                        .append(',').append(csv(row.getTaskTitle()))
+                        .append(',').append(csv(row.getAttempts()))
+                        .append(',').append(csv(row.getPassCount()))
+                        .append(',').append(csv(row.getPassRate()))
+                        .append('\n');
+            }
+        } else {
+            sb.append("userId,username,learnMinutes,avgScore,submissionCount\n");
+            for (TeacherStudentRankVO row : overview.getStudentRanks()) {
+                sb.append(csv(row.getUserId()))
+                        .append(',').append(csv(row.getUsername()))
+                        .append(',').append(csv(row.getLearnMinutes()))
+                        .append(',').append(csv(row.getAvgScore()))
+                        .append(',').append(csv(row.getSubmissionCount()))
+                        .append('\n');
+            }
+        }
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private String csv(Object val) {
+        if (val == null) {
+            return "";
+        }
+        String raw = String.valueOf(val).replace("\"", "\"\"");
+        return "\"" + raw + "\"";
     }
 }

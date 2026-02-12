@@ -1,4 +1,5 @@
 import http from './http'
+import { getToken } from '../utils/auth'
 
 export const fetchTeacherCourses = () => http.get('/api/teacher/courses')
 export const createTeacherCourse = (data) => http.post('/api/teacher/courses', data)
@@ -28,3 +29,17 @@ export const deleteTeacherCodeProblem = (id) => http.delete(`/api/teacher/code-p
 export const createTeacherExamTask = (data) => http.post('/api/teacher/exams', data)
 export const fetchTeacherExamTasks = () => http.get('/api/teacher/exams')
 export const deleteTeacherExamTask = (id) => http.delete(`/api/teacher/exams/${id}`)
+
+export const fetchTeacherStatsOverview = () => http.get('/api/teacher/stats/overview')
+export const exportTeacherStats = async (type = 'students') => {
+  const token = getToken()
+  const res = await fetch(`/api/teacher/stats/export?type=${encodeURIComponent(type)}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    }
+  })
+  if (!res.ok) {
+    throw new Error('导出失败')
+  }
+  return res.blob()
+}
