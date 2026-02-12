@@ -911,6 +911,64 @@ const toggleTheme = () => {
   background: rgba(255, 255, 255, 0.02);
 }
 
+:global(html[data-theme='aurora']) .main {
+  background:
+    radial-gradient(circle at 92% 12%, rgba(56, 189, 248, 0.08), transparent 24%),
+    radial-gradient(circle at 15% 86%, rgba(16, 185, 129, 0.06), transparent 22%);
+}
+
+:global(html[data-theme='aurora']) .content-shell {
+  border-color: rgba(148, 163, 184, 0.24);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 252, 255, 0.9));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+:global(html[data-theme='aurora']) .content-shell::before,
+:global(html[data-theme='aurora']) .content-shell::after {
+  opacity: 0.45;
+}
+
+:global(html[data-theme='aurora']) :deep(.content-shell > .page),
+:global(html[data-theme='aurora']) :deep(.content-shell > .profile-page),
+:global(html[data-theme='aurora']) :deep(.content-shell > .code-page) {
+  border-color: rgba(148, 163, 184, 0.22);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.74)),
+    rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+:global(html[data-theme='aurora']) :deep(.content-shell > .page::before),
+:global(html[data-theme='aurora']) :deep(.content-shell > .profile-page::before),
+:global(html[data-theme='aurora']) :deep(.content-shell > .code-page::before) {
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.38), transparent);
+}
+
+:global(html[data-theme='aurora']) :deep(.content-shell .hero),
+:global(html[data-theme='aurora']) :deep(.content-shell .page-head),
+:global(html[data-theme='aurora']) :deep(.content-shell .toolbar),
+:global(html[data-theme='aurora']) :deep(.content-shell .panel),
+:global(html[data-theme='aurora']) :deep(.content-shell .problem-panel),
+:global(html[data-theme='aurora']) :deep(.content-shell .tab-bar),
+:global(html[data-theme='aurora']) :deep(.content-shell .stats-card),
+:global(html[data-theme='aurora']) :deep(.content-shell .chart-card) {
+  border-color: rgba(148, 163, 184, 0.2);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+}
+
+:global(html[data-theme='aurora']) :deep(.content-shell .hero::after),
+:global(html[data-theme='aurora']) :deep(.content-shell .page-head::after) {
+  opacity: 0.45;
+}
+
+:global(html[data-theme='aurora']) .meta-pill {
+  color: #37506d;
+  border-color: rgba(148, 163, 184, 0.26);
+  background: rgba(255, 255, 255, 0.66);
+}
+
 @keyframes pulse {
   0%,
   100% {
