@@ -15,6 +15,7 @@ import TeacherQuestions from '../pages/TeacherQuestions.vue'
 import TeacherExams from '../pages/TeacherExams.vue'
 import TeacherStats from '../pages/TeacherStats.vue'
 import AdminTeacherApply from '../pages/AdminTeacherApply.vue'
+import AdminUsers from '../pages/AdminUsers.vue'
 import AppLayout from '../layouts/AppLayout.vue'
 import { getToken } from '../utils/auth'
 
@@ -40,6 +41,7 @@ const routes = [
       { path: 'teacher/exams', component: TeacherExams },
       { path: 'teacher/stats', component: TeacherStats },
       { path: 'teacher/courses/:id', component: TeacherCourseDetail },
+      { path: 'admin/users', component: AdminUsers },
       { path: 'admin/teacher-apply', component: AdminTeacherApply }
     ]
   }

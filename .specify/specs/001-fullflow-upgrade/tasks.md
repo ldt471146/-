@@ -59,9 +59,9 @@
 
 - [x] T301 [Done] [US3] 教师申请审核流程 `back/.../AdminTeacherApplyController.java`, `front/src/pages/AdminTeacherApply.vue`
 - [ ] T302 [Todo] [US3] 新增用户管理实体字段（禁言状态、封禁原因）`back/src/main/java/com/example/back/entity/SysUser.java`, `online.sql`
-- [ ] T303 [Todo] [US3] 新增管理员用户管理接口（列表、禁用、启用、角色调整）`back/src/main/java/com/example/back/controller/AdminUserController.java`
+- [x] T303 [Done] [US3] 新增管理员用户管理接口（列表、禁用、启用、角色调整）`back/src/main/java/com/example/back/controller/AdminUserController.java`
 - [ ] T304 [Todo] [US3] 新增课程审核状态与审核接口 `back/src/main/java/com/example/back/controller/AdminCourseController.java`
-- [ ] T305 [Todo] [US3] 前端新增管理员用户管理页 `front/src/pages/AdminUsers.vue`
+- [x] T305 [Done] [US3] 前端新增管理员用户管理页 `front/src/pages/AdminUsers.vue`
 - [ ] T306 [Todo] [US3] 前端新增管理员课程审核页 `front/src/pages/AdminCourses.vue`
 
 ---
