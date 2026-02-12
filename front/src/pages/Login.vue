@@ -16,6 +16,7 @@ if (!['neon', 'red', 'aurora'].includes(theme.value)) {
 const remember = ref(getRemember())
 const email = ref('')
 const username = ref('')
+const parentPhone = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 const code = ref('')
@@ -25,6 +26,7 @@ const errorMsg = ref('')
 const fieldErrors = ref({
   email: '',
   username: '',
+  parentPhone: '',
   password: '',
   confirmPassword: '',
   code: ''
@@ -32,6 +34,7 @@ const fieldErrors = ref({
 const touched = ref({
   email: false,
   username: false,
+  parentPhone: false,
   password: false,
   confirmPassword: false,
   code: false
@@ -42,14 +45,21 @@ let timer = null
 
 watch(mode, () => {
   errorMsg.value = ''
-  fieldErrors.value = { email: '', username: '', password: '', confirmPassword: '', code: '' }
-  touched.value = { email: false, username: false, password: false, confirmPassword: false, code: false }
+  fieldErrors.value = { email: '', username: '', parentPhone: '', password: '', confirmPassword: '', code: '' }
+  touched.value = {
+    email: false,
+    username: false,
+    parentPhone: false,
+    password: false,
+    confirmPassword: false,
+    code: false
+  }
   code.value = ''
   confirmPassword.value = ''
+  parentPhone.value = ''
   registerRole.value = 'STUDENT'
 })
 
-// 页面加载时应用主题
 document.documentElement.setAttribute('data-theme', theme.value)
 
 const toggleTheme = () => {
@@ -62,7 +72,7 @@ const toggleTheme = () => {
 
 const handleLogin = async () => {
   errorMsg.value = ''
-  fieldErrors.value = { email: '', username: '', password: '', confirmPassword: '', code: '' }
+  fieldErrors.value = { email: '', username: '', parentPhone: '', password: '', confirmPassword: '', code: '' }
   if (!email.value || !password.value) {
     errorMsg.value = '请输入邮箱和密码'
     return
@@ -88,6 +98,7 @@ const handleLogin = async () => {
 }
 
 const emailReg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const phoneReg = /^[0-9]{6,20}$/
 
 const validateField = (field) => {
   if (field === 'email') {
@@ -101,6 +112,17 @@ const validateField = (field) => {
   }
   if (field === 'username') {
     fieldErrors.value.username = username.value ? '' : '用户名不能为空'
+  }
+  if (field === 'parentPhone') {
+    if (registerRole.value !== 'STUDENT') {
+      fieldErrors.value.parentPhone = ''
+    } else if (!parentPhone.value) {
+      fieldErrors.value.parentPhone = '家长手机号不能为空'
+    } else if (!phoneReg.test(parentPhone.value)) {
+      fieldErrors.value.parentPhone = '家长手机号格式不正确'
+    } else {
+      fieldErrors.value.parentPhone = ''
+    }
   }
   if (field === 'password') {
     if (!password.value) {
@@ -132,7 +154,7 @@ const onBlur = (field) => {
 
 const handleRegister = async () => {
   errorMsg.value = ''
-  fieldErrors.value = { email: '', username: '', password: '', confirmPassword: '', code: '' }
+  fieldErrors.value = { email: '', username: '', parentPhone: '', password: '', confirmPassword: '', code: '' }
   let hasError = false
   if (!email.value) {
     fieldErrors.value.email = '邮箱不能为空'
@@ -141,6 +163,15 @@ const handleRegister = async () => {
   if (!username.value) {
     fieldErrors.value.username = '用户名不能为空'
     hasError = true
+  }
+  if (registerRole.value === 'STUDENT') {
+    if (!parentPhone.value) {
+      fieldErrors.value.parentPhone = '家长手机号不能为空'
+      hasError = true
+    } else if (!phoneReg.test(parentPhone.value)) {
+      fieldErrors.value.parentPhone = '家长手机号格式不正确'
+      hasError = true
+    }
   }
   if (!password.value) {
     fieldErrors.value.password = '密码不能为空'
@@ -169,6 +200,7 @@ const handleRegister = async () => {
     const { data } = await register({
       email: email.value,
       username: username.value,
+      parentPhone: registerRole.value === 'STUDENT' ? parentPhone.value : '',
       password: password.value,
       code: code.value,
       roleCode: registerRole.value
@@ -306,6 +338,18 @@ onBeforeUnmount(() => {
             <span>用户名</span>
             <input v-model.trim="username" type="text" placeholder="给自己起个昵称" @blur="onBlur('username')" />
             <em v-if="touched.username && fieldErrors.username" class="field-tip">{{ fieldErrors.username }}</em>
+          </label>
+          <label v-if="mode === 'register'" class="field">
+            <span>家长手机号（学生必填）</span>
+            <input
+              v-model.trim="parentPhone"
+              type="text"
+              placeholder="请输入家长手机号"
+              @blur="onBlur('parentPhone')"
+            />
+            <em v-if="touched.parentPhone && fieldErrors.parentPhone" class="field-tip">
+              {{ fieldErrors.parentPhone }}
+            </em>
           </label>
           <label class="field">
             <span>密码</span>

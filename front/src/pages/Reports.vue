@@ -1,6 +1,7 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import * as echarts from 'echarts'
 import http from '../api/http'
 import { ElNotification } from 'element-plus'
 
@@ -9,42 +10,12 @@ const trend = ref(null)
 const loading = ref(false)
 const router = useRouter()
 
-const load = async () => {
-  loading.value = true
-  try {
-    const [ov, tr] = await Promise.all([
-      http.get('/api/reports/overview'),
-      http.get('/api/reports/trend')
-    ])
-    overview.value = ov.data
-    trend.value = tr.data
-  } catch (e) {
-    ElNotification({
-      title: '加载失败',
-      message: e?.message || '报告加载失败',
-      type: 'error',
-      duration: 2000
-    })
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(load)
-
-const learnPoints = computed(() => {
-  if (!trend.value) return ''
-  const data = trend.value.learnMinutes || []
-  const max = Math.max(1, ...data)
-  return data.map((v, i) => `${i * 60},${80 - (v / max) * 60}`).join(' ')
-})
-
-const questionPoints = computed(() => {
-  if (!trend.value) return ''
-  const data = trend.value.questionTotal || []
-  const max = Math.max(1, ...data)
-  return data.map((v, i) => `${i * 60},${80 - (v / max) * 60}`).join(' ')
-})
+const lineRef = ref(null)
+const radarRef = ref(null)
+const pieRef = ref(null)
+let lineChart = null
+let radarChart = null
+let pieChart = null
 
 const weakCourses = computed(() => overview.value?.weakCourses || [])
 const suggestions = computed(() => {
@@ -60,13 +31,161 @@ const goPractice = (courseId) => {
   }
   router.push({ path: '/practice', query })
 }
+
+const resizeCharts = () => {
+  lineChart?.resize()
+  radarChart?.resize()
+  pieChart?.resize()
+}
+
+const disposeCharts = () => {
+  lineChart?.dispose()
+  radarChart?.dispose()
+  pieChart?.dispose()
+  lineChart = null
+  radarChart = null
+  pieChart = null
+}
+
+const renderCharts = () => {
+  if (!overview.value || !trend.value) return
+  disposeCharts()
+
+  if (lineRef.value) {
+    lineChart = echarts.init(lineRef.value)
+    lineChart.setOption({
+      tooltip: { trigger: 'axis' },
+      legend: { top: 0, textStyle: { color: '#8ea0b5' } },
+      grid: { left: 36, right: 16, top: 40, bottom: 24 },
+      xAxis: {
+        type: 'category',
+        data: trend.value.days || [],
+        axisLabel: { color: '#8ea0b5' }
+      },
+      yAxis: { type: 'value', axisLabel: { color: '#8ea0b5' } },
+      series: [
+        {
+          name: '学习分钟',
+          type: 'line',
+          smooth: true,
+          data: trend.value.learnMinutes || [],
+          lineStyle: { width: 3, color: '#2dd4bf' },
+          itemStyle: { color: '#2dd4bf' },
+          areaStyle: { color: 'rgba(45,212,191,0.15)' }
+        },
+        {
+          name: '做题数量',
+          type: 'line',
+          smooth: true,
+          data: trend.value.questionTotal || [],
+          lineStyle: { width: 3, color: '#f59e0b' },
+          itemStyle: { color: '#f59e0b' },
+          areaStyle: { color: 'rgba(245,158,11,0.12)' }
+        }
+      ]
+    })
+  }
+
+  if (radarRef.value) {
+    const totalLessons = overview.value.totalLessons || 0
+    const finishedLessons = overview.value.finishedLessons || 0
+    const progress = totalLessons > 0 ? Math.round((finishedLessons * 100) / totalLessons) : 0
+    const wrongCount = overview.value.wrongCount || 0
+    const wrongRedo = overview.value.wrongRedoCount || 0
+    const redoRate = wrongCount > 0 ? Math.round((wrongRedo * 100) / wrongCount) : 100
+    const learnMinutes = Math.round((overview.value.learnSeconds || 0) / 60)
+    const activeScore = Math.min(100, (trend.value.questionTotal || []).reduce((a, b) => a + b, 0) * 4)
+    const focusScore = Math.min(100, Math.round(learnMinutes / 5))
+
+    radarChart = echarts.init(radarRef.value)
+    radarChart.setOption({
+      tooltip: {},
+      radar: {
+        indicator: [
+          { name: '课程进度', max: 100 },
+          { name: '正确率', max: 100 },
+          { name: '错题改正', max: 100 },
+          { name: '学习活跃', max: 100 },
+          { name: '专注时长', max: 100 }
+        ],
+        splitLine: { lineStyle: { color: 'rgba(148,163,184,0.25)' } },
+        axisName: { color: '#8ea0b5' }
+      },
+      series: [
+        {
+          type: 'radar',
+          data: [
+            {
+              value: [progress, overview.value.questionAccuracy || 0, redoRate, activeScore, focusScore],
+              areaStyle: { color: 'rgba(59,130,246,0.22)' },
+              lineStyle: { color: '#3b82f6' },
+              itemStyle: { color: '#3b82f6' }
+            }
+          ]
+        }
+      ]
+    })
+  }
+
+  if (pieRef.value) {
+    const pieData = weakCourses.value.length
+      ? weakCourses.value.map((w) => ({ name: w.name, value: w.value || 1 }))
+      : [{ name: '暂无明显薄弱项', value: 1 }]
+    pieChart = echarts.init(pieRef.value)
+    pieChart.setOption({
+      tooltip: { trigger: 'item' },
+      legend: { bottom: 0, textStyle: { color: '#8ea0b5' } },
+      series: [
+        {
+          type: 'pie',
+          radius: ['42%', '72%'],
+          avoidLabelOverlap: false,
+          data: pieData
+        }
+      ]
+    })
+  }
+}
+
+const load = async () => {
+  loading.value = true
+  try {
+    const [ov, tr] = await Promise.all([
+      http.get('/api/reports/overview'),
+      http.get('/api/reports/trend')
+    ])
+    overview.value = ov.data
+    trend.value = tr.data
+    await nextTick()
+    renderCharts()
+  } catch (e) {
+    ElNotification({
+      title: '加载失败',
+      message: e?.message || '报告加载失败',
+      type: 'error',
+      duration: 2000
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  load()
+  window.addEventListener('resize', resizeCharts)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', resizeCharts)
+  disposeCharts()
+})
 </script>
 
 <template>
   <div class="page">
     <div class="hero">
       <div class="title display">成长报告</div>
-      <div class="subtitle">可视化成长曲线与能力画像</div>
+      <div class="subtitle">学习趋势、能力雷达、薄弱项分布</div>
     </div>
 
     <el-skeleton :loading="loading" animated>
@@ -77,80 +196,46 @@ const goPractice = (courseId) => {
         <div v-if="overview" class="grid">
           <div class="card">
             <div class="label">课程进度</div>
-            <div class="value">
-              {{ overview.finishedLessons || 0 }} / {{ overview.totalLessons || 0 }}
-            </div>
-            <div class="meta">已完成课时 / 总课时</div>
+            <div class="value">{{ overview.finishedLessons || 0 }} / {{ overview.totalLessons || 0 }}</div>
           </div>
           <div class="card">
             <div class="label">课程数量</div>
             <div class="value">{{ overview.myCourses || 0 }}</div>
-            <div class="meta">已加入课程</div>
           </div>
           <div class="card">
             <div class="label">正确率</div>
             <div class="value">{{ overview.questionAccuracy || 0 }}%</div>
-            <div class="meta">题目正确率</div>
           </div>
           <div class="card">
             <div class="label">错题数量</div>
             <div class="value">{{ overview.wrongCount || 0 }}</div>
-            <div class="meta">待复盘错题</div>
           </div>
           <div class="card">
             <div class="label">学习时长</div>
             <div class="value">{{ Math.round((overview.learnSeconds || 0) / 60) }} 分钟</div>
-            <div class="meta">累计学习时间</div>
           </div>
           <div class="card">
             <div class="label">错题重做</div>
             <div class="value">{{ overview.wrongRedoCount || 0 }}</div>
-            <div class="meta">已改正错题</div>
-          </div>
-          <div class="card">
-            <div class="label">收藏题目</div>
-            <div class="value">{{ overview.favoriteCount || 0 }}</div>
-            <div class="meta">收藏题数量</div>
           </div>
         </div>
-        <div v-if="trend" class="charts">
-          <div class="chart-card">
-            <div class="chart-title">近7天学习时长（分钟）</div>
-            <svg viewBox="0 0 360 100">
-              <polyline :points="learnPoints" fill="none" stroke="url(#g1)" stroke-width="3" />
-              <defs>
-                <linearGradient id="g1" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stop-color="var(--ui-accent)" />
-                  <stop offset="100%" stop-color="var(--ui-accent-2)" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <div class="chart-axis">
-              <span v-for="d in trend.days" :key="d">{{ d }}</span>
-            </div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-title">近7天做题数量</div>
-            <svg viewBox="0 0 360 100">
-              <polyline :points="questionPoints" fill="none" stroke="#ffb703" stroke-width="3" />
-            </svg>
-            <div class="chart-axis">
-              <span v-for="d in trend.days" :key="d">{{ d }}</span>
-            </div>
-          </div>
+
+        <div class="charts">
+          <el-card class="chart-card" shadow="never">
+            <template #header>每周学习趋势</template>
+            <div ref="lineRef" class="chart"></div>
+          </el-card>
+          <el-card class="chart-card" shadow="never">
+            <template #header>能力雷达图</template>
+            <div ref="radarRef" class="chart"></div>
+          </el-card>
+          <el-card class="chart-card" shadow="never">
+            <template #header>薄弱项分布</template>
+            <div ref="pieRef" class="chart"></div>
+          </el-card>
         </div>
+
         <div v-if="overview" class="insights">
-          <div class="insight-card">
-            <div class="insight-title">弱项标签</div>
-            <div v-if="weakCourses.length" class="tag-list">
-              <div v-for="item in weakCourses" :key="item.id" class="tag">
-                <span class="tag-name">{{ item.name }}</span>
-                <span class="tag-value">{{ item.value }}</span>
-              </div>
-              <button class="link-btn" @click="goPractice()">去题库</button>
-            </div>
-            <div v-else class="empty">暂无明显薄弱课程</div>
-          </div>
           <div class="insight-card">
             <div class="insight-title">建议学习路径</div>
             <ul class="suggest-list">
@@ -163,7 +248,6 @@ const goPractice = (courseId) => {
             </ul>
           </div>
         </div>
-        <el-empty v-else description="暂无报告数据" />
       </template>
     </el-skeleton>
   </div>
@@ -175,13 +259,9 @@ const goPractice = (courseId) => {
   gap: 16px;
 }
 
-.hero {
-  padding: 6px 0 8px;
-}
-
 .title {
   font-size: 22px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .subtitle {
@@ -192,13 +272,13 @@ const goPractice = (courseId) => {
 
 .grid {
   display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 .card {
-  padding: 18px;
-  border-radius: 14px;
+  padding: 14px;
+  border-radius: 12px;
   background: var(--ui-surface);
   border: 1px solid var(--ui-border);
 }
@@ -209,55 +289,28 @@ const goPractice = (courseId) => {
 }
 
 .value {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   margin-top: 6px;
 }
 
-.meta {
-  font-size: 12px;
-  color: var(--ui-text-muted);
-  margin-top: 4px;
-}
-
-.skeleton-grid {
-  height: 220px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.08);
-}
-
 .charts {
   display: grid;
-  gap: 16px;
-  margin-top: 12px;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
 .chart-card {
-  background: var(--ui-surface);
   border: 1px solid var(--ui-border);
-  border-radius: 16px;
-  padding: 16px;
 }
 
-.chart-title {
-  font-size: 12px;
-  color: var(--ui-text-muted);
-  margin-bottom: 10px;
-}
-
-.chart-axis {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  font-size: 11px;
-  color: var(--ui-text-muted);
-  margin-top: 6px;
+.chart {
+  height: 280px;
 }
 
 .insights {
   display: grid;
-  gap: 16px;
-  margin-top: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
 }
 
 .insight-card {
@@ -265,54 +318,18 @@ const goPractice = (courseId) => {
   border: 1px solid var(--ui-border);
   border-radius: 16px;
   padding: 16px;
-  display: grid;
-  gap: 12px;
 }
 
 .insight-title {
   font-size: 12px;
   color: var(--ui-text-muted);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--ui-border);
-  background: var(--ui-surface-soft);
-  font-size: 12px;
-}
-
-.tag-name {
-  color: var(--ui-text);
-  font-weight: 600;
-}
-
-.tag-value {
-  background: linear-gradient(120deg, var(--ui-accent), var(--ui-accent-2));
-  color: #051015;
-  padding: 2px 6px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
+  margin-bottom: 10px;
 }
 
 .suggest-list {
   display: grid;
-  gap: 6px;
+  gap: 8px;
   padding-left: 16px;
-  color: var(--ui-text);
-  font-size: 13px;
 }
 
 .suggest-list li {
@@ -322,8 +339,7 @@ const goPractice = (courseId) => {
   gap: 8px;
 }
 
-.inline-btn,
-.link-btn {
+.inline-btn {
   border: 1px solid var(--ui-border);
   background: transparent;
   color: var(--ui-text);
@@ -333,12 +349,9 @@ const goPractice = (courseId) => {
   cursor: pointer;
 }
 
-.link-btn {
-  margin-left: 6px;
-}
-
-.empty {
-  font-size: 12px;
-  color: var(--ui-text-muted);
+.skeleton-grid {
+  height: 220px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
 }
 </style>

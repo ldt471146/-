@@ -85,23 +85,23 @@
 **Goal**: 上线轻量社区问答和审核治理闭环。  
 **Independent Test**: 完成发帖、回复、最佳答案、审核删除、禁言完整链路。
 
-- [ ] T501 [Todo] [US5] 新增帖子/回复/审核记录实体 `back/src/main/java/com/example/back/entity/CommunityPost.java`, `CommunityReply.java`, `CommunityModeration.java`
-- [ ] T502 [Todo] [US5] 新增社区 Mapper 与基础 CRUD `back/src/main/java/com/example/back/mapper/CommunityPostMapper.java`
-- [ ] T503 [Todo] [US5] 新增社区服务（发帖、回复、最佳答案）`back/src/main/java/com/example/back/service/impl/CommunityServiceImpl.java`
-- [ ] T504 [Todo] [US5] 新增社区控制器（学生/教师）`back/src/main/java/com/example/back/controller/CommunityController.java`
-- [ ] T505 [Todo] [US5] 新增社区审核控制器（管理员）`back/src/main/java/com/example/back/controller/AdminCommunityController.java`
-- [ ] T506 [Todo] [US5] 新增社区页面（列表、详情、发帖）`front/src/pages/Community.vue`, `front/src/pages/CommunityPostDetail.vue`
-- [ ] T507 [Todo] [US5] 前端新增管理员内容审核页 `front/src/pages/AdminCommunity.vue`
+- [x] T501 [Done] [US5] 新增帖子/回复/审核记录实体 `back/src/main/java/com/example/back/entity/CommunityPost.java`, `CommunityReply.java`, `CommunityModeration.java`
+- [x] T502 [Done] [US5] 新增社区 Mapper 与基础 CRUD `back/src/main/java/com/example/back/mapper/CommunityPostMapper.java`
+- [x] T503 [Done] [US5] 新增社区服务（发帖、回复、最佳答案）`back/src/main/java/com/example/back/service/impl/CommunityServiceImpl.java`
+- [x] T504 [Done] [US5] 新增社区控制器（学生/教师）`back/src/main/java/com/example/back/controller/CommunityController.java`
+- [x] T505 [Done] [US5] 新增社区审核控制器（管理员）`back/src/main/java/com/example/back/controller/AdminCommunityController.java`
+- [x] T506 [Done] [US5] 新增社区页面（列表、详情、发帖）`front/src/pages/Community.vue`, `front/src/pages/CommunityPostDetail.vue`
+- [x] T507 [Done] [US5] 前端新增管理员内容审核页 `front/src/pages/AdminCommunity.vue`
 
 ---
 
 ## Phase 7: Cross-Cutting - 可视化、体验、合规
 
-- [ ] T601 [Todo] [US1] 报告页集成 ECharts 折线图/雷达图/饼图 `front/src/pages/Reports.vue`
-- [ ] T602 [Todo] [US2] 教师统计页接入 ECharts 柱状图/饼图 `front/src/pages/TeacherStats.vue`
-- [ ] T603 [Todo] [US1] 注册补“学生家长手机号验证”流程（后端校验 + 前端表单）`back/.../AuthServiceImpl.java`, `front/src/pages/Login.vue`
-- [ ] T604 [Todo] [US3] 内容审核关键操作写审计日志 `back/src/main/java/com/example/back/service/...`
-- [ ] T605 [Todo] [US1] 增加关键接口性能监控点（判题、考试提交）`back/src/main/java/com/example/back/service/...`
+- [x] T601 [Done] [US1] 报告页集成 ECharts 折线图/雷达图/饼图 `front/src/pages/Reports.vue`
+- [x] T602 [Done] [US2] 教师统计页接入 ECharts 柱状图/饼图 `front/src/pages/TeacherStats.vue`
+- [x] T603 [Done] [US1] 注册补“学生家长手机号验证”流程（后端校验 + 前端表单）`back/.../AuthServiceImpl.java`, `front/src/pages/Login.vue`
+- [x] T604 [Done] [US3] 内容审核关键操作写审计日志 `back/src/main/java/com/example/back/service/...`
+- [x] T605 [Done] [US1] 增加关键接口性能监控点（判题、考试提交）`back/src/main/java/com/example/back/service/...`
 
 ---
 

@@ -1,5 +1,6 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import * as echarts from 'echarts'
 import { ElNotification } from 'element-plus'
 import { exportTeacherStats, fetchTeacherStatsOverview } from '../api/teacher'
 
@@ -7,11 +8,91 @@ const loading = ref(false)
 const exporting = ref('')
 const overview = ref(null)
 
+const barRef = ref(null)
+const pieRef = ref(null)
+let barChart = null
+let pieChart = null
+
+const resizeCharts = () => {
+  barChart?.resize()
+  pieChart?.resize()
+}
+
+const disposeCharts = () => {
+  barChart?.dispose()
+  pieChart?.dispose()
+  barChart = null
+  pieChart = null
+}
+
+const renderCharts = () => {
+  if (!overview.value) return
+  disposeCharts()
+
+  const topStudents = (overview.value.studentRanks || []).slice(0, 8)
+  if (barRef.value) {
+    barChart = echarts.init(barRef.value)
+    barChart.setOption({
+      tooltip: { trigger: 'axis' },
+      grid: { left: 36, right: 16, top: 24, bottom: 36 },
+      xAxis: {
+        type: 'category',
+        data: topStudents.map((v) => v.username || '-'),
+        axisLabel: { color: '#8ea0b5', rotate: 25 }
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: { color: '#8ea0b5' }
+      },
+      series: [
+        {
+          name: '平均分',
+          type: 'bar',
+          data: topStudents.map((v) => v.avgScore || 0),
+          barMaxWidth: 28,
+          itemStyle: {
+            borderRadius: [6, 6, 0, 0],
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#22d3ee' },
+              { offset: 1, color: '#3b82f6' }
+            ])
+          }
+        }
+      ]
+    })
+  }
+
+  const examStats = overview.value.examStats || []
+  const pass = examStats.reduce((sum, v) => sum + (v.passCount || 0), 0)
+  const total = examStats.reduce((sum, v) => sum + (v.attempts || 0), 0)
+  const fail = Math.max(0, total - pass)
+  if (pieRef.value) {
+    pieChart = echarts.init(pieRef.value)
+    pieChart.setOption({
+      tooltip: { trigger: 'item' },
+      legend: { bottom: 0, textStyle: { color: '#8ea0b5' } },
+      series: [
+        {
+          name: '任务通过分布',
+          type: 'pie',
+          radius: ['45%', '72%'],
+          data: [
+            { name: '通过', value: pass },
+            { name: '未通过', value: fail }
+          ]
+        }
+      ]
+    })
+  }
+}
+
 const load = async () => {
   loading.value = true
   try {
     const res = await fetchTeacherStatsOverview()
     overview.value = res.data || null
+    await nextTick()
+    renderCharts()
   } catch (e) {
     ElNotification({
       title: '加载失败',
@@ -70,7 +151,15 @@ const doExport = async (type) => {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  load()
+  window.addEventListener('resize', resizeCharts)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', resizeCharts)
+  disposeCharts()
+})
 </script>
 
 <template>
@@ -98,6 +187,17 @@ onMounted(load)
             <div class="kpi-value">{{ item.value }}</div>
             <div class="kpi-hint">{{ item.hint }}</div>
           </div>
+        </div>
+
+        <div class="charts">
+          <el-card class="panel" shadow="never">
+            <template #header>学生平均分柱状图（Top 8）</template>
+            <div ref="barRef" class="chart"></div>
+          </el-card>
+          <el-card class="panel" shadow="never">
+            <template #header>考试通过分布饼图</template>
+            <div ref="pieRef" class="chart"></div>
+          </el-card>
         </div>
 
         <div class="grid">
@@ -204,6 +304,16 @@ onMounted(load)
   color: var(--ui-text-muted);
 }
 
+.charts {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.chart {
+  height: 300px;
+}
+
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -224,9 +334,11 @@ onMounted(load)
   .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .charts {
+    grid-template-columns: 1fr;
+  }
   .grid {
     grid-template-columns: 1fr;
   }
 }
 </style>
-

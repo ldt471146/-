@@ -10,3 +10,8 @@ export const updateAdminUserRoles = (id, data) => http.put(`/api/admin/users/${i
 
 export const fetchAdminCourses = (params) => http.get('/api/admin/courses', { params })
 export const reviewAdminCourse = (id, data) => http.post(`/api/admin/courses/${id}/review`, data)
+
+export const fetchAdminCommunityPosts = (params) => http.get('/api/admin/community/posts', { params })
+export const fetchAdminCommunityReplies = (params) => http.get('/api/admin/community/replies', { params })
+export const reviewAdminCommunityPost = (id, data) => http.post(`/api/admin/community/posts/${id}/review`, data)
+export const reviewAdminCommunityReply = (id, data) => http.post(`/api/admin/community/replies/${id}/review`, data)

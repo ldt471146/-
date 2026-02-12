@@ -82,6 +82,7 @@ const activeMenu = computed(() => {
   if (path.startsWith('/practice')) return '/practice'
   if (path.startsWith('/code-practice')) return '/code-practice'
   if (path.startsWith('/learning-path')) return '/learning-path'
+  if (path.startsWith('/community')) return '/community'
   if (path.startsWith('/reports')) return '/reports'
   if (path.startsWith('/exams')) return '/exams'
   if (path.startsWith('/notices')) return '/notices'
@@ -90,6 +91,7 @@ const activeMenu = computed(() => {
   if (path.startsWith('/teacher')) return '/teacher'
   if (path.startsWith('/admin/users')) return '/admin/users'
   if (path.startsWith('/admin/courses')) return '/admin/courses'
+  if (path.startsWith('/admin/community')) return '/admin/community'
   if (path.startsWith('/admin')) return '/admin/teacher-apply'
   return path
 })
@@ -103,6 +105,7 @@ const quickOptions = computed(() => {
     { label: '编程判题', value: '/code-practice' },
     { label: '学习路径', value: '/learning-path' },
     { label: '在线考试', value: '/exams' },
+    { label: '编程社区', value: '/community' },
     { label: `消息通知${unread.value > 0 ? ` (${unread.value})` : ''}`, value: '/notices' },
     { label: '成长报告', value: '/reports' }
   ]
@@ -110,6 +113,7 @@ const quickOptions = computed(() => {
   if (isTeacher.value) items.push({ label: '教学统计', value: '/teacher/stats' })
   if (isAdmin.value) items.push({ label: '用户管理', value: '/admin/users' })
   if (isAdmin.value) items.push({ label: '课程审核', value: '/admin/courses' })
+  if (isAdmin.value) items.push({ label: '内容审核', value: '/admin/community' })
   if (isAdmin.value) items.push({ label: '教师审核', value: '/admin/teacher-apply' })
   return items
 })
@@ -169,6 +173,7 @@ const toggleTheme = () => {
               <el-badge v-if="unread > 0" :value="unread" class="menu-badge" />
             </el-menu-item>
             <el-menu-item index="/reports">成长报告</el-menu-item>
+            <el-menu-item index="/community">编程社区</el-menu-item>
           </el-sub-menu>
           <el-sub-menu v-if="isTeacher || isAdmin" index="manage">
             <template #title>
@@ -179,6 +184,7 @@ const toggleTheme = () => {
             <el-menu-item v-if="isTeacher" index="/teacher/stats">教学统计</el-menu-item>
             <el-menu-item v-if="isAdmin" index="/admin/users">用户管理</el-menu-item>
             <el-menu-item v-if="isAdmin" index="/admin/courses">课程审核</el-menu-item>
+            <el-menu-item v-if="isAdmin" index="/admin/community">内容审核</el-menu-item>
             <el-menu-item v-if="isAdmin" index="/admin/teacher-apply">教师审核</el-menu-item>
           </el-sub-menu>
         </el-menu>
