@@ -86,6 +86,27 @@ public class HomeworkServiceImpl implements HomeworkService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateByTeacher(Long homeworkId, TeacherHomeworkCreateRequest request) {
+        Long teacherId = requireUserId();
+        EduHomework homework = homeworkMapper.selectById(homeworkId);
+        if (homework == null) {
+            throw new IllegalArgumentException("作业不存在");
+        }
+        requireTeacherCourse(homework.getCourseId(), teacherId);
+        requireTeacherCourse(request.getCourseId(), teacherId);
+
+        homework.setCourseId(request.getCourseId());
+        homework.setTitle(request.getTitle());
+        homework.setDeadline(request.getDeadline());
+        homeworkMapper.updateById(homework);
+
+        homeworkProblemMapper.delete(new LambdaQueryWrapper<EduHomeworkProblem>()
+                .eq(EduHomeworkProblem::getHomeworkId, homeworkId));
+        saveHomeworkProblems(homeworkId, request.getCourseId(), request.getProblems());
+    }
+
+    @Override
     public List<HomeworkItemVO> listTeacherHomework(Long courseId) {
         Long teacherId = requireUserId();
         List<EduCourse> teacherCourses = courseMapper.selectList(new LambdaQueryWrapper<EduCourse>()
@@ -296,4 +317,3 @@ public class HomeworkServiceImpl implements HomeworkService {
         return courseIds;
     }
 }
-

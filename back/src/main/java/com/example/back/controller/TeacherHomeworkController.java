@@ -30,6 +30,13 @@ public class TeacherHomeworkController {
         return ApiResponse.ok(homeworkService.createByTeacher(request));
     }
 
+    @PutMapping("/{id}")
+    public ApiResponse<Void> update(@PathVariable("id") Long id,
+                                    @Valid @RequestBody TeacherHomeworkCreateRequest request) {
+        homeworkService.updateByTeacher(id, request);
+        return ApiResponse.ok();
+    }
+
     @GetMapping
     public ApiResponse<List<HomeworkItemVO>> list(@RequestParam(value = "courseId", required = false) Long courseId) {
         return ApiResponse.ok(homeworkService.listTeacherHomework(courseId));
@@ -46,4 +53,3 @@ public class TeacherHomeworkController {
         return ApiResponse.ok();
     }
 }
-

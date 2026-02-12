@@ -13,6 +13,8 @@ public interface HomeworkService {
 
     Long createByTeacher(TeacherHomeworkCreateRequest request);
 
+    void updateByTeacher(Long homeworkId, TeacherHomeworkCreateRequest request);
+
     List<HomeworkItemVO> listTeacherHomework(Long courseId);
 
     HomeworkDetailVO teacherDetail(Long homeworkId);
@@ -23,4 +25,3 @@ public interface HomeworkService {
 
     HomeworkDetailVO myHomeworkDetail(Long homeworkId);
 }
-

@@ -5,17 +5,21 @@ import { ElMessageBox, ElNotification } from 'element-plus'
 import { fetchTeacherCourses, fetchTeacherQuestions } from '../api/teacher'
 import {
   createTeacherHomework,
+  updateTeacherHomework,
   deleteTeacherHomework,
   fetchTeacherHomework,
   fetchTeacherHomeworkDetail
 } from '../api/homework'
 
 const loading = ref(false)
-const creating = ref(false)
+const submitting = ref(false)
 const list = ref([])
 const courses = ref([])
+const queryCourseId = ref(null)
 
 const formOpen = ref(false)
+const editingId = ref(null)
+const suppressCourseWatch = ref(false)
 const form = ref({
   courseId: null,
   title: '',
@@ -42,7 +46,7 @@ const loadBase = async () => {
   try {
     const [courseRes, listRes] = await Promise.all([
       fetchTeacherCourses(),
-      fetchTeacherHomework()
+      fetchTeacherHomework({ courseId: queryCourseId.value || undefined })
     ])
     courses.value = courseRes.data || []
     list.value = listRes.data || []
@@ -59,7 +63,7 @@ const loadBase = async () => {
 const loadList = async () => {
   loading.value = true
   try {
-    const res = await fetchTeacherHomework()
+    const res = await fetchTeacherHomework({ courseId: queryCourseId.value || undefined })
     list.value = res.data || []
   } catch (e) {
     ElNotification({
@@ -82,6 +86,7 @@ const removeProblem = (idx) => {
 }
 
 const openCreate = () => {
+  editingId.value = null
   form.value = {
     courseId: null,
     title: '',
@@ -114,11 +119,18 @@ const loadQuestions = async (courseId) => {
 }
 
 watch(() => form.value.courseId, (id) => {
-  form.value.problems = form.value.problems.map((x) => ({ ...x, problemId: null }))
+  if (!id) {
+    questions.value = []
+    return
+  }
+  if (!suppressCourseWatch.value) {
+    form.value.problems = form.value.problems.map((x) => ({ ...x, problemId: null }))
+  }
+  suppressCourseWatch.value = false
   loadQuestions(id)
 })
 
-const submitCreate = async () => {
+const submitForm = async () => {
   const payload = {
     courseId: form.value.courseId,
     title: form.value.title?.trim(),
@@ -135,16 +147,62 @@ const submitCreate = async () => {
     ElNotification({ title: '请至少添加一题', message: '作业需包含题目', type: 'warning', duration: 1500 })
     return
   }
-  creating.value = true
+  submitting.value = true
   try {
-    await createTeacherHomework(payload)
+    if (editingId.value) {
+      await updateTeacherHomework(editingId.value, payload)
+    } else {
+      await createTeacherHomework(payload)
+    }
     formOpen.value = false
     await loadList()
-    ElNotification({ title: '创建成功', message: '作业已发布', type: 'success', duration: 1600 })
+    ElNotification({
+      title: editingId.value ? '更新成功' : '创建成功',
+      message: editingId.value ? '作业已更新' : '作业已发布',
+      type: 'success',
+      duration: 1600
+    })
   } catch (e) {
-    ElNotification({ title: '创建失败', message: e?.message || '请稍后重试', type: 'error', duration: 2000 })
+    ElNotification({
+      title: editingId.value ? '更新失败' : '创建失败',
+      message: e?.message || '请稍后重试',
+      type: 'error',
+      duration: 2000
+    })
   } finally {
-    creating.value = false
+    submitting.value = false
+  }
+}
+
+const openEdit = async (row) => {
+  formOpen.value = true
+  submitting.value = false
+  editingId.value = row.id
+  try {
+    const res = await fetchTeacherHomeworkDetail(row.id)
+    const data = res.data || {}
+    suppressCourseWatch.value = true
+    await loadQuestions(data.courseId)
+    form.value = {
+      courseId: data.courseId || null,
+      title: data.title || '',
+      deadline: data.deadline || '',
+      problems: (data.problems || []).map((p) => ({
+        problemId: p.problemId,
+        score: p.score || 100
+      }))
+    }
+    if (!form.value.problems.length) {
+      form.value.problems = [{ problemId: null, score: 100 }]
+    }
+  } catch (e) {
+    formOpen.value = false
+    ElNotification({
+      title: '加载失败',
+      message: e?.message || '作业详情加载失败',
+      type: 'error',
+      duration: 2000
+    })
   }
 }
 
@@ -202,6 +260,11 @@ onMounted(async () => {
     </div>
 
     <el-card shadow="never">
+      <div class="toolbar">
+        <el-select v-model="queryCourseId" clearable placeholder="按课程筛选" @change="loadList">
+          <el-option v-for="c in courses" :key="c.id" :label="c.title" :value="c.id" />
+        </el-select>
+      </div>
       <el-table v-loading="loading" :data="list">
         <el-table-column prop="title" label="作业标题" min-width="220" />
         <el-table-column label="课程" min-width="160">
@@ -215,6 +278,7 @@ onMounted(async () => {
         <el-table-column label="操作" width="180">
           <template #default="{ row }">
             <el-button size="small" @click="openDetail(row)">详情</el-button>
+            <el-button size="small" type="primary" plain @click="openEdit(row)">编辑</el-button>
             <el-button size="small" type="danger" @click="remove(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -222,7 +286,7 @@ onMounted(async () => {
       <el-empty v-if="!loading && !list.length" description="暂无作业，点击右上角新建" />
     </el-card>
 
-    <el-dialog v-model="formOpen" title="新建作业" width="760px" destroy-on-close>
+    <el-dialog v-model="formOpen" :title="editingId ? '编辑作业' : '新建作业'" width="760px" destroy-on-close>
       <el-form label-width="90px">
         <el-form-item label="课程">
           <el-select v-model="form.courseId" placeholder="请选择课程">
@@ -262,7 +326,7 @@ onMounted(async () => {
       </el-form>
       <template #footer>
         <el-button @click="formOpen = false">取消</el-button>
-        <el-button type="primary" :loading="creating" @click="submitCreate">发布</el-button>
+        <el-button type="primary" :loading="submitting" @click="submitForm">{{ editingId ? '保存' : '发布' }}</el-button>
       </template>
     </el-dialog>
 
@@ -325,6 +389,12 @@ onMounted(async () => {
   margin-top: 6px;
   font-size: 12px;
   color: var(--ui-text-muted);
+}
+
+.toolbar {
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .problems {
@@ -390,4 +460,3 @@ onMounted(async () => {
   }
 }
 </style>
-
