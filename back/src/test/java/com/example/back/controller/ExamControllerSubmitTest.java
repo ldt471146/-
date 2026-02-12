@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -51,5 +52,21 @@ class ExamControllerSubmitTest {
                 .andExpect(jsonPath("$.data.score").value(80))
                 .andExpect(jsonPath("$.data.correctCount").value(8));
     }
-}
 
+    @Test
+    void shouldReturnValidationErrorWhenExamIdMissing() throws Exception {
+        mockMvc.perform(post("/api/exams/submit")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "examId": "",
+                                  "answers": []
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.message").value("考试ID不能为空"));
+
+        verifyNoInteractions(examService);
+    }
+}

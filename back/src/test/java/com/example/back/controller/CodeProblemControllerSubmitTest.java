@@ -57,5 +57,22 @@ class CodeProblemControllerSubmitTest {
                 .andExpect(jsonPath("$.data.errorType").value("COMPILE_ERROR"))
                 .andExpect(jsonPath("$.data.failedCaseIndex").value(1));
     }
-}
 
+    @Test
+    void shouldReturnBusinessErrorWhenSubmitFails() throws Exception {
+        when(codeProblemService.submit(any())).thenThrow(new IllegalArgumentException("题目不存在"));
+
+        mockMvc.perform(post("/api/code/submit")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "problemId": 99999,
+                                  "languageId": 54,
+                                  "sourceCode": "int main(){ return 0; }"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(400))
+                .andExpect(jsonPath("$.message").value("题目不存在"));
+    }
+}
