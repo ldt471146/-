@@ -465,6 +465,9 @@ const toggleTheme = () => {
   backdrop-filter: blur(8px);
   position: relative;
   overflow: visible;
+  height: auto;
+  min-height: 92px;
+  line-height: normal;
 }
 
 .header::after {
