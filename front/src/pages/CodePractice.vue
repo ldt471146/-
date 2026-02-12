@@ -13,6 +13,7 @@ const submitting = ref(false)
 const result = ref(null)
 const keyword = ref('')
 const difficultyFilter = ref('all')
+const showGuide = ref(true)
 
 const languages = [
   { label: 'C (GCC 9.2.0)', id: 50 },
@@ -74,12 +75,13 @@ const resultTitleMap = {
   WA: 'Wrong Answer',
   CE: 'Compile Error',
   RE: 'Runtime Error',
-  TLE: 'Time Limit Exceeded'
+  TLE: 'Time Limit Exceeded',
+  IE: 'Internal Error'
 }
 
 const resultTitle = computed(() => {
   const code = result.value?.result
-  return resultTitleMap[code] || code || 'Unknown'
+  return result.value?.resultLabel || resultTitleMap[code] || code || 'Unknown'
 })
 
 const resultClass = computed(() => {
@@ -89,7 +91,18 @@ const resultClass = computed(() => {
   if (code === 'CE') return 'ce'
   if (code === 'RE') return 're'
   if (code === 'TLE') return 'tle'
+  if (code === 'IE') return 'ie'
   return ''
+})
+
+const resultHint = computed(() => {
+  const errorType = result.value?.errorType
+  if (errorType === 'COMPILE_ERROR') return '请优先检查语法、头文件和括号匹配。'
+  if (errorType === 'RUNTIME_ERROR') return '请检查数组越界、空指针、除零等运行时问题。'
+  if (errorType === 'TIMEOUT') return '请优化算法复杂度，避免在循环内做重复高开销操作。'
+  if (errorType === 'WRONG_ANSWER') return '请核对边界条件、输入输出格式和换行。'
+  if (errorType === 'SYSTEM_ERROR') return '系统繁忙或判题环境异常，请稍后重试。'
+  return '通过后可以尝试更优写法，提升可读性与性能。'
 })
 
 const fillStarter = () => {
@@ -270,6 +283,20 @@ onMounted(async () => {
                       <el-button type="primary" :loading="submitting" @click="submit">提交判题</el-button>
                     </div>
                   </div>
+                  <div class="guide-box">
+                    <button class="guide-toggle" @click="showGuide = !showGuide">
+                      {{ showGuide ? '收起引导' : '展开引导' }}
+                    </button>
+                    <div v-if="showGuide" class="guide-content">
+                      <div class="guide-title">提交前引导</div>
+                      <div class="guide-line">1. 先点击“填入模板”，补全 `solve/main` 逻辑。</div>
+                      <div class="guide-line">2. 输入输出要严格匹配样例，注意空格和换行。</div>
+                      <div class="guide-line">3. 先处理边界值：空输入、极大值、负数、重复值。</div>
+                      <div v-if="detail.samples?.length" class="guide-line">
+                        可参考样例输入：<code>{{ (detail.samples[0]?.input || '').trim() || '-' }}</code>
+                      </div>
+                    </div>
+                  </div>
                   <textarea v-model="sourceCode" class="code-input"></textarea>
                 </section>
               </div>
@@ -277,11 +304,15 @@ onMounted(async () => {
               <div v-if="result" class="result-card" :class="resultClass">
                 <div class="result-line">
                   <div class="result-title">{{ resultTitle }}</div>
-                  <div class="result-score">通过 {{ result.passed || 0 }} / {{ result.total || 0 }}</div>
+                  <div class="result-score">
+                    通过 {{ result.passed || 0 }} / {{ result.total || 0 }}
+                    <span v-if="result.failedCaseIndex"> · 失败用例 #{{ result.failedCaseIndex }}</span>
+                  </div>
                 </div>
                 <div class="result-msg">
-                  {{ (result.messages || []).join('、') }}
+                  {{ (result.messages || []).join('、') || '暂无详细信息' }}
                 </div>
+                <div class="result-hint">{{ resultHint }}</div>
               </div>
             </div>
             <el-empty v-else description="暂无编程题" />
@@ -567,6 +598,40 @@ pre {
   gap: 8px;
 }
 
+.guide-box {
+  border: 1px dashed var(--ui-border);
+  border-radius: 10px;
+  background: rgba(86, 255, 213, 0.05);
+  padding: 8px 10px;
+}
+
+.guide-toggle {
+  border: 1px solid var(--ui-border);
+  background: transparent;
+  color: var(--ui-text);
+  font-size: 12px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.guide-content {
+  margin-top: 8px;
+  display: grid;
+  gap: 4px;
+}
+
+.guide-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ui-accent);
+}
+
+.guide-line {
+  font-size: 12px;
+  color: var(--ui-text-muted);
+}
+
 .editor-bar {
   display: flex;
   justify-content: space-between;
@@ -651,10 +716,21 @@ pre {
   background: rgba(59, 130, 246, 0.13);
 }
 
+.result-card.ie {
+  border-color: rgba(148, 163, 184, 0.45);
+  background: rgba(148, 163, 184, 0.14);
+}
+
 .result-msg {
   font-size: 12px;
   margin-top: 5px;
   color: var(--ui-text-muted);
+}
+
+.result-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ui-text);
 }
 
 .skeleton-block {

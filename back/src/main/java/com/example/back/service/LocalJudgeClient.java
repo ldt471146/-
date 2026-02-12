@@ -23,6 +23,13 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class LocalJudgeClient {
 
+    public static final String RESULT_AC = "AC";
+    public static final String RESULT_WA = "WA";
+    public static final String RESULT_CE = "CE";
+    public static final String RESULT_RE = "RE";
+    public static final String RESULT_TLE = "TLE";
+    public static final String RESULT_IE = "IE";
+
     private final LocalJudgeProperties properties;
 
     public LocalJudgeClient(LocalJudgeProperties properties) {
@@ -33,10 +40,10 @@ public class LocalJudgeClient {
                                  Integer languageId,
                                  List<TestCaseInput> testCases) {
         if (sourceCode == null || sourceCode.isBlank()) {
-            return JudgeOutcome.fail("CE", List.of("代码不能为空"), 0, testCases.size());
+            return JudgeOutcome.fail(RESULT_CE, List.of("代码不能为空"), 0, testCases.size(), null);
         }
         if (testCases == null || testCases.isEmpty()) {
-            return JudgeOutcome.fail("WA", List.of("题目未配置测试用例"), 0, 0);
+            return JudgeOutcome.fail(RESULT_WA, List.of("题目未配置测试用例"), 0, 0, null);
         }
 
         Path workDir = null;
@@ -45,7 +52,13 @@ public class LocalJudgeClient {
             ProgramRunner runner = buildRunner(languageId, sourceCode, workDir);
             CompileResult compileResult = runner.compile();
             if (!compileResult.isSuccess()) {
-                return JudgeOutcome.fail("CE", List.of(safeMsg("编译失败：" + compileResult.getMessage())), 0, testCases.size());
+                return JudgeOutcome.fail(
+                        RESULT_CE,
+                        List.of(safeMsg("编译失败：" + compileResult.getMessage())),
+                        0,
+                        testCases.size(),
+                        1
+                );
             }
 
             int passed = 0;
@@ -56,25 +69,27 @@ public class LocalJudgeClient {
                 int index = i + 1;
                 if (runResult.isTimeout()) {
                     messages.add("第" + index + "组：超时");
-                    return new JudgeOutcome("TLE", passed, testCases.size(), messages);
+                    return new JudgeOutcome(RESULT_TLE, passed, testCases.size(), messages, index);
                 }
                 if (!runResult.isSuccess()) {
                     messages.add("第" + index + "组：运行错误 " + safeMsg(runResult.getMessage()));
-                    return new JudgeOutcome("RE", passed, testCases.size(), messages);
+                    return new JudgeOutcome(RESULT_RE, passed, testCases.size(), messages, index);
                 }
 
                 String actual = normalize(runResult.getStdout());
                 String expected = normalize(testCase.getExpectedOutput());
                 if (!expected.equals(actual)) {
                     messages.add("第" + index + "组：答案错误");
-                    return new JudgeOutcome("WA", passed, testCases.size(), messages);
+                    return new JudgeOutcome(RESULT_WA, passed, testCases.size(), messages, index);
                 }
                 passed++;
                 messages.add("第" + index + "组：通过");
             }
-            return new JudgeOutcome("AC", passed, testCases.size(), messages);
+            return new JudgeOutcome(RESULT_AC, passed, testCases.size(), messages, null);
+        } catch (IllegalArgumentException ex) {
+            return JudgeOutcome.fail(RESULT_CE, List.of(safeMsg(ex.getMessage())), 0, testCases.size(), null);
         } catch (Exception ex) {
-            return JudgeOutcome.fail("RE", List.of("本地判题异常：" + safeMsg(ex.getMessage())), 0, testCases.size());
+            return JudgeOutcome.fail(RESULT_IE, List.of("本地判题异常：" + safeMsg(ex.getMessage())), 0, testCases.size(), null);
         } finally {
             if (workDir != null) {
                 tryDeleteRecursively(workDir);
@@ -308,16 +323,18 @@ public class LocalJudgeClient {
         private Integer passed;
         private Integer total;
         private List<String> messages;
+        private Integer failedCaseIndex;
 
-        public JudgeOutcome(String result, Integer passed, Integer total, List<String> messages) {
+        public JudgeOutcome(String result, Integer passed, Integer total, List<String> messages, Integer failedCaseIndex) {
             this.result = result;
             this.passed = passed;
             this.total = total;
             this.messages = messages;
+            this.failedCaseIndex = failedCaseIndex;
         }
 
-        public static JudgeOutcome fail(String result, List<String> messages, int passed, int total) {
-            return new JudgeOutcome(result, passed, total, messages);
+        public static JudgeOutcome fail(String result, List<String> messages, int passed, int total, Integer failedCaseIndex) {
+            return new JudgeOutcome(result, passed, total, messages, failedCaseIndex);
         }
     }
 
@@ -380,4 +397,3 @@ public class LocalJudgeClient {
         }
     }
 }
-

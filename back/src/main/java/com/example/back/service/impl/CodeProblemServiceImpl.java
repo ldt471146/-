@@ -117,7 +117,7 @@ public class CodeProblemServiceImpl implements CodeProblemService {
         int passed = outcome.getPassed() == null ? 0 : outcome.getPassed();
         int total = outcome.getTotal() == null ? 0 : outcome.getTotal();
         List<String> messages = outcome.getMessages() == null ? List.of() : outcome.getMessages();
-        String result = outcome.getResult();
+        String result = normalizeResult(outcome.getResult());
 
         EduCodeSubmission submission = new EduCodeSubmission();
         submission.setUserId(userId);
@@ -134,10 +134,42 @@ public class CodeProblemServiceImpl implements CodeProblemService {
         CodeSubmitResultVO vo = new CodeSubmitResultVO();
         vo.setProblemId(request.getProblemId());
         vo.setResult(result);
+        vo.setResultLabel(resultLabel(result));
+        vo.setErrorType(errorType(result));
+        vo.setFailedCaseIndex(outcome.getFailedCaseIndex());
         vo.setPassed(passed);
         vo.setTotal(total);
         vo.setMessages(messages);
         return vo;
+    }
+
+    private String normalizeResult(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return LocalJudgeClient.RESULT_IE;
+        }
+        return raw;
+    }
+
+    private String resultLabel(String result) {
+        return switch (result) {
+            case LocalJudgeClient.RESULT_AC -> "Accepted";
+            case LocalJudgeClient.RESULT_WA -> "Wrong Answer";
+            case LocalJudgeClient.RESULT_CE -> "Compile Error";
+            case LocalJudgeClient.RESULT_RE -> "Runtime Error";
+            case LocalJudgeClient.RESULT_TLE -> "Time Limit Exceeded";
+            default -> "Internal Error";
+        };
+    }
+
+    private String errorType(String result) {
+        return switch (result) {
+            case LocalJudgeClient.RESULT_AC -> "NONE";
+            case LocalJudgeClient.RESULT_WA -> "WRONG_ANSWER";
+            case LocalJudgeClient.RESULT_CE -> "COMPILE_ERROR";
+            case LocalJudgeClient.RESULT_RE -> "RUNTIME_ERROR";
+            case LocalJudgeClient.RESULT_TLE -> "TIMEOUT";
+            default -> "SYSTEM_ERROR";
+        };
     }
 
     private CodeProblemVO toProblemVO(EduCodeProblem p) {
