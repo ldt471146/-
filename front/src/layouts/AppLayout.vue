@@ -423,7 +423,7 @@ const toggleTheme = () => {
 .display {
   font-family: var(--font-display);
   letter-spacing: 0.04em;
-  line-height: 1.2;
+  line-height: 1.36;
 }
 
 .menu {
@@ -464,7 +464,7 @@ const toggleTheme = () => {
   justify-content: space-between;
   backdrop-filter: blur(8px);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .header::after {
@@ -566,7 +566,7 @@ const toggleTheme = () => {
 .title {
   font-size: 22px;
   font-weight: 600;
-  padding-top: 2px;
+  padding-top: 0;
 }
 
 .subtitle {
