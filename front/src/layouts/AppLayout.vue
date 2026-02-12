@@ -262,6 +262,16 @@ const toggleTheme = () => {
             <div>
               <div class="title display">学习控制台</div>
               <div class="subtitle">更少入口，更快到达目标功能</div>
+              <div class="title-metas">
+                <span class="meta-pill">
+                  <el-icon><Bell /></el-icon>
+                  未读 {{ unread }}
+                </span>
+                <span class="meta-pill">
+                  <el-icon><UserFilled /></el-icon>
+                  {{ roleLabel }}
+                </span>
+              </div>
             </div>
           </div>
           <div class="header-right">
@@ -470,8 +480,9 @@ const toggleTheme = () => {
 
 .header-left {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
+  z-index: 1;
 }
 
 .header-right {
@@ -563,6 +574,25 @@ const toggleTheme = () => {
   margin-top: 4px;
 }
 
+.title-metas {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #d9f3ff;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .main {
   padding: 20px 22px;
   background:
@@ -581,12 +611,47 @@ const toggleTheme = () => {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 18px 36px rgba(1, 10, 22, 0.2);
+  position: relative;
+  overflow: hidden;
+  animation: shellIn 0.35s ease;
+}
+
+.content-shell::before {
+  content: '';
+  position: absolute;
+  left: -90px;
+  top: -80px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(86, 255, 213, 0.13), transparent 72%);
+  pointer-events: none;
+}
+
+.content-shell::after {
+  content: '';
+  position: absolute;
+  right: -120px;
+  bottom: -120px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 210, 255, 0.12), transparent 70%);
+  pointer-events: none;
 }
 
 :deep(.el-card) {
   background: var(--ui-card);
   border: 1px solid var(--ui-border-soft);
   color: var(--ui-text);
+  border-radius: 14px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+:deep(.el-card:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(2, 12, 24, 0.22);
+  border-color: rgba(86, 255, 213, 0.35);
 }
 
 :deep(.el-card__header) {
@@ -609,6 +674,11 @@ const toggleTheme = () => {
   border: 1px solid var(--ui-border-soft);
   color: var(--ui-text);
   background: rgba(0, 210, 255, 0.05);
+}
+
+.theme-btn:hover,
+.route-btn:hover {
+  transform: translateY(-1px);
 }
 
 :deep(.el-menu-item) {
@@ -679,7 +749,21 @@ const toggleTheme = () => {
   }
 }
 
+@keyframes shellIn {
+  from {
+    opacity: 0.76;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 960px) {
+  .title-metas {
+    display: none;
+  }
   .header-chip,
   .route-btn {
     display: none;
