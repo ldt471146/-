@@ -454,7 +454,7 @@ const toggleTheme = () => {
 }
 
 .header {
-  padding: 14px 20px;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--ui-border-soft);
   background:
     linear-gradient(180deg, rgba(86, 255, 213, 0.09), rgba(86, 255, 213, 0.01)),
@@ -466,7 +466,7 @@ const toggleTheme = () => {
   position: relative;
   overflow: visible;
   height: auto;
-  min-height: 74px;
+  min-height: 64px;
   line-height: normal;
 }
 
@@ -856,7 +856,7 @@ const toggleTheme = () => {
     display: none;
   }
   .header {
-    padding: 12px 12px;
+    padding: 8px 10px;
   }
   .main {
     padding: 14px;
