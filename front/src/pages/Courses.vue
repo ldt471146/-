@@ -7,6 +7,9 @@ import { ElNotification } from 'element-plus'
 const courses = ref([])
 const myCourses = ref([])
 const tab = ref('my')
+const keyword = ref('')
+const statusFilter = ref('all')
+const sortBy = ref('smart')
 const loading = ref(false)
 const error = ref('')
 const router = useRouter()
@@ -106,6 +109,59 @@ const cancelEnroll = async (id) => {
 
 const myCourseIds = computed(() => new Set(myCourses.value.map((c) => c.id)))
 
+const safeLower = (v) => String(v || '').toLowerCase()
+
+const listToShow = computed(() => {
+  const src = tab.value === 'my' ? myCourses.value : courses.value
+  let rows = [...src]
+  const q = keyword.value.trim().toLowerCase()
+  if (q) {
+    rows = rows.filter((x) =>
+      safeLower(x.title).includes(q) ||
+      safeLower(x.intro).includes(q) ||
+      safeLower(x.teacherName).includes(q)
+    )
+  }
+  if (statusFilter.value === 'updating') {
+    rows = rows.filter((x) => x.finishStatus !== 1)
+  } else if (statusFilter.value === 'finished') {
+    rows = rows.filter((x) => x.finishStatus === 1)
+  } else if (statusFilter.value === 'joined' && tab.value === 'all') {
+    rows = rows.filter((x) => myCourseIds.value.has(x.id))
+  } else if (statusFilter.value === 'not-joined' && tab.value === 'all') {
+    rows = rows.filter((x) => !myCourseIds.value.has(x.id))
+  }
+
+  if (sortBy.value === 'latest') {
+    rows.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+  } else if (sortBy.value === 'name') {
+    rows.sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'zh-Hans-CN'))
+  } else if (sortBy.value === 'progress' && tab.value === 'my') {
+    rows.sort((a, b) => (b.progress || 0) - (a.progress || 0))
+  } else {
+    if (tab.value === 'my') {
+      rows.sort((a, b) => {
+        const pa = a.progress || 0
+        const pb = b.progress || 0
+        if (pa !== pb) return pb - pa
+        return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime()
+      })
+    } else {
+      rows.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+    }
+  }
+  return rows
+})
+
+const joinedCount = computed(() => myCourses.value.length)
+const allCount = computed(() => courses.value.length)
+const finishedCount = computed(() => myCourses.value.filter((x) => x.finishStatus === 1).length)
+const avgProgress = computed(() => {
+  if (!myCourses.value.length) return 0
+  const sum = myCourses.value.reduce((acc, x) => acc + (x.progress || 0), 0)
+  return Math.round(sum / myCourses.value.length)
+})
+
 onMounted(load)
 </script>
 
@@ -114,12 +170,37 @@ onMounted(load)
     <div class="hero">
       <div class="title display">课程学习</div>
       <div class="subtitle">选择你的学习路径，从第一行代码开始</div>
+      <div class="kpis">
+        <div class="kpi">我的课程 {{ joinedCount }}</div>
+        <div class="kpi">课程广场 {{ allCount }}</div>
+        <div class="kpi">已完结 {{ finishedCount }}</div>
+        <div class="kpi">平均进度 {{ avgProgress }}%</div>
+      </div>
     </div>
 
     <el-tabs v-model="tab" class="tabs">
       <el-tab-pane label="我的课程" name="my"></el-tab-pane>
       <el-tab-pane label="课程广场" name="all"></el-tab-pane>
     </el-tabs>
+
+    <el-card class="toolbar" shadow="never">
+      <div class="toolbar-grid">
+        <el-input v-model="keyword" clearable placeholder="搜索课程名 / 简介 / 讲师" />
+        <el-select v-model="statusFilter">
+          <el-option label="全部状态" value="all" />
+          <el-option label="更新中" value="updating" />
+          <el-option label="已完结" value="finished" />
+          <el-option v-if="tab === 'all'" label="已加入" value="joined" />
+          <el-option v-if="tab === 'all'" label="未加入" value="not-joined" />
+        </el-select>
+        <el-select v-model="sortBy">
+          <el-option label="智能排序" value="smart" />
+          <el-option v-if="tab === 'my'" label="进度优先" value="progress" />
+          <el-option label="最新发布" value="latest" />
+          <el-option label="按名称" value="name" />
+        </el-select>
+      </div>
+    </el-card>
 
     <el-skeleton :loading="loading" animated>
       <template #template>
@@ -132,12 +213,9 @@ onMounted(load)
         </el-row>
       </template>
       <template #default>
-        <el-row
-          v-if="tab === 'my' ? myCourses.length : courses.length"
-          :gutter="16"
-        >
+        <el-row v-if="listToShow.length" :gutter="16">
           <el-col
-            v-for="item in (tab === 'my' ? myCourses : courses)"
+            v-for="item in listToShow"
             :key="item.id"
             :xs="24"
             :sm="12"
@@ -151,7 +229,9 @@ onMounted(load)
               </div>
               <div class="meta-line">
                 <span>讲师：{{ item.teacherName || '-' }}</span>
-                <span>{{ item.finishStatus === 1 ? '已完结' : '更新中' }}</span>
+                <el-tag size="small" :type="item.finishStatus === 1 ? 'success' : 'warning'">
+                  {{ item.finishStatus === 1 ? '已完结' : '更新中' }}
+                </el-tag>
                 <span v-if="item.createdAt">发布：{{ formatDate(item.createdAt) }}</span>
               </div>
               <div class="intro">{{ item.intro || '暂无简介' }}</div>
@@ -226,6 +306,32 @@ onMounted(load)
   margin-top: 6px;
 }
 
+.kpis {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kpi {
+  font-size: 12px;
+  color: var(--ui-text);
+  border: 1px solid var(--ui-border-soft);
+  background: var(--ui-surface-soft);
+  border-radius: 999px;
+  padding: 5px 10px;
+}
+
+.toolbar {
+  border: 1px solid var(--ui-border-soft);
+}
+
+.toolbar-grid {
+  display: grid;
+  grid-template-columns: 1fr 160px 160px;
+  gap: 10px;
+}
+
 .tabs {
   margin-bottom: 6px;
 }
@@ -294,6 +400,10 @@ onMounted(load)
   font-size: 12px;
   color: var(--ui-text-muted);
   min-height: 38px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .meta-line {
@@ -370,5 +480,11 @@ onMounted(load)
   height: 200px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 960px) {
+  .toolbar-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
