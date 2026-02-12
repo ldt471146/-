@@ -5,6 +5,21 @@ import { useRouter } from 'vue-router'
 import { getMe } from '../api/auth'
 import AiAssistant from '../components/AiAssistant.vue'
 import http from '../api/http'
+import {
+  House,
+  Reading,
+  Collection,
+  Monitor,
+  Share,
+  Finished,
+  ChatDotRound,
+  Bell,
+  DataAnalysis,
+  UserFilled,
+  Histogram,
+  User,
+  DocumentChecked
+} from '@element-plus/icons-vue'
 
 const router = useRouter()
 const collapsed = ref(false)
@@ -146,46 +161,83 @@ const toggleTheme = () => {
 
         <el-menu class="menu" :default-active="activeMenu" :default-openeds="['learn', 'grow', 'manage']" :collapse="collapsed" router>
           <el-menu-item index="/dashboard">
-            <span class="menu-dot"></span>
+            <el-icon class="menu-icon"><House /></el-icon>
             学习总览
           </el-menu-item>
           <el-sub-menu index="learn">
             <template #title>
-              <span class="menu-dot"></span>
+              <el-icon class="menu-icon"><Reading /></el-icon>
               学习训练
             </template>
-            <el-menu-item index="/courses">我的课程</el-menu-item>
-            <el-menu-item index="/practice">题库练习</el-menu-item>
-            <el-menu-item index="/code-practice">编程判题</el-menu-item>
-            <el-menu-item index="/learning-path">学习路径</el-menu-item>
+            <el-menu-item index="/courses">
+              <el-icon class="menu-icon"><Collection /></el-icon>
+              我的课程
+            </el-menu-item>
+            <el-menu-item index="/practice">
+              <el-icon class="menu-icon"><Monitor /></el-icon>
+              题库练习
+            </el-menu-item>
+            <el-menu-item index="/code-practice">
+              <el-icon class="menu-icon"><Monitor /></el-icon>
+              编程判题
+            </el-menu-item>
+            <el-menu-item index="/learning-path">
+              <el-icon class="menu-icon"><Share /></el-icon>
+              学习路径
+            </el-menu-item>
           </el-sub-menu>
           <el-menu-item index="/exams">
-            <span class="menu-dot"></span>
+            <el-icon class="menu-icon"><Finished /></el-icon>
             在线考试
           </el-menu-item>
           <el-sub-menu index="grow">
             <template #title>
-              <span class="menu-dot"></span>
+              <el-icon class="menu-icon"><ChatDotRound /></el-icon>
               互动成长
             </template>
             <el-menu-item index="/notices">
+              <el-icon class="menu-icon"><Bell /></el-icon>
               消息通知
               <el-badge v-if="unread > 0" :value="unread" class="menu-badge" />
             </el-menu-item>
-            <el-menu-item index="/reports">成长报告</el-menu-item>
-            <el-menu-item index="/community">编程社区</el-menu-item>
+            <el-menu-item index="/reports">
+              <el-icon class="menu-icon"><DataAnalysis /></el-icon>
+              成长报告
+            </el-menu-item>
+            <el-menu-item index="/community">
+              <el-icon class="menu-icon"><ChatDotRound /></el-icon>
+              编程社区
+            </el-menu-item>
           </el-sub-menu>
           <el-sub-menu v-if="isTeacher || isAdmin" index="manage">
             <template #title>
-              <span class="menu-dot"></span>
+              <el-icon class="menu-icon"><UserFilled /></el-icon>
               管理工作台
             </template>
-            <el-menu-item v-if="isTeacher" index="/teacher">教师端</el-menu-item>
-            <el-menu-item v-if="isTeacher" index="/teacher/stats">教学统计</el-menu-item>
-            <el-menu-item v-if="isAdmin" index="/admin/users">用户管理</el-menu-item>
-            <el-menu-item v-if="isAdmin" index="/admin/courses">课程审核</el-menu-item>
-            <el-menu-item v-if="isAdmin" index="/admin/community">内容审核</el-menu-item>
-            <el-menu-item v-if="isAdmin" index="/admin/teacher-apply">教师审核</el-menu-item>
+            <el-menu-item v-if="isTeacher" index="/teacher">
+              <el-icon class="menu-icon"><User /></el-icon>
+              教师端
+            </el-menu-item>
+            <el-menu-item v-if="isTeacher" index="/teacher/stats">
+              <el-icon class="menu-icon"><Histogram /></el-icon>
+              教学统计
+            </el-menu-item>
+            <el-menu-item v-if="isAdmin" index="/admin/users">
+              <el-icon class="menu-icon"><UserFilled /></el-icon>
+              用户管理
+            </el-menu-item>
+            <el-menu-item v-if="isAdmin" index="/admin/courses">
+              <el-icon class="menu-icon"><DocumentChecked /></el-icon>
+              课程审核
+            </el-menu-item>
+            <el-menu-item v-if="isAdmin" index="/admin/community">
+              <el-icon class="menu-icon"><ChatDotRound /></el-icon>
+              内容审核
+            </el-menu-item>
+            <el-menu-item v-if="isAdmin" index="/admin/teacher-apply">
+              <el-icon class="menu-icon"><DocumentChecked /></el-icon>
+              教师审核
+            </el-menu-item>
           </el-sub-menu>
         </el-menu>
 
@@ -349,21 +401,16 @@ const toggleTheme = () => {
   background: transparent;
   border: none;
   --el-menu-bg-color: transparent;
-  --el-menu-text-color: var(--ui-text);
+  --el-menu-text-color: #e6f4ff;
   --el-menu-hover-bg-color: rgba(86, 255, 213, 0.12);
   --el-menu-active-color: var(--ui-accent);
   z-index: 1;
 }
 
-.menu-dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 2px;
-  transform: rotate(45deg);
-  background: rgba(86, 255, 213, 0.6);
+.menu-icon {
   margin-right: 10px;
-  box-shadow: 0 0 8px rgba(86, 255, 213, 0.6);
+  color: #94e7ff;
+  font-size: 16px;
 }
 
 .quick-jump {
@@ -483,6 +530,7 @@ const toggleTheme = () => {
   margin: 4px 0;
   min-height: 42px;
   transition: all 0.18s ease;
+  color: #e6f4ff;
 }
 
 :deep(.el-sub-menu .el-sub-menu__title) {
@@ -490,6 +538,7 @@ const toggleTheme = () => {
   margin: 4px 0;
   min-height: 44px;
   transition: all 0.18s ease;
+  color: #e6f4ff;
 }
 
 :deep(.el-sub-menu.is-active > .el-sub-menu__title) {
@@ -506,6 +555,10 @@ const toggleTheme = () => {
 :deep(.el-menu-item.is-active .menu-dot) {
   background: var(--ui-accent);
   box-shadow: 0 0 12px rgba(86, 255, 213, 0.9);
+}
+
+:deep(.el-menu-item.is-active .menu-icon) {
+  color: #5ef7c2;
 }
 
 :deep(.el-menu-item:hover) {

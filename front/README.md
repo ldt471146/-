@@ -72,6 +72,7 @@ npm run build
   - 渐变玻璃背景
   - 选中态高亮与位移动效
   - 菜单层级间距优化
+  - 菜单项增加 `el-icon` 图标并提升浅色背景下对比度
 - 社区相关页面：
   - `front/src/pages/Community.vue`
   - `front/src/pages/CommunityPostDetail.vue`
