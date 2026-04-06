@@ -3,6 +3,7 @@ package com.example.back.controller;
 import com.example.back.common.ApiResponse;
 import com.example.back.dto.AdminCommunityReviewRequest;
 import com.example.back.service.CommunityService;
+import com.example.back.vo.CommunityModerationOverviewVO;
 import com.example.back.vo.CommunityPostVO;
 import com.example.back.vo.CommunityReplyVO;
 import com.example.back.vo.PageResultVO;
@@ -11,7 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 管理员-社区审核
+ * 管理员社区审核与治理
  */
 @RestController
 @RequestMapping("/api/admin/community")
@@ -22,6 +23,11 @@ public class AdminCommunityController {
 
     public AdminCommunityController(CommunityService communityService) {
         this.communityService = communityService;
+    }
+
+    @GetMapping("/overview")
+    public ApiResponse<CommunityModerationOverviewVO> overview() {
+        return ApiResponse.ok(communityService.adminOverview());
     }
 
     @GetMapping("/posts")

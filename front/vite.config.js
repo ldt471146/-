@@ -4,16 +4,18 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
     vueDevTools(),
   ],
   server: {
-    // 前端开发代理到后端，避免跨域
     proxy: {
       '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/uploads': {
         target: 'http://localhost:8080',
         changeOrigin: true
       }
@@ -24,4 +26,17 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  build: {
+    chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vue-core': ['vue', 'vue-router'],
+          'element-plus': ['element-plus'],
+          'echarts-core': ['echarts'],
+          'http-core': ['axios']
+        }
+      }
+    }
+  }
 })

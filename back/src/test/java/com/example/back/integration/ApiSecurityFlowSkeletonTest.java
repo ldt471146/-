@@ -7,6 +7,7 @@ import com.example.back.controller.CodeProblemController;
 import com.example.back.controller.TeacherController;
 import com.example.back.dto.CodeSubmitRequest;
 import com.example.back.entity.SysUser;
+import com.example.back.exception.GlobalExceptionHandler;
 import com.example.back.mapper.SysRoleMapper;
 import com.example.back.mapper.SysUserMapper;
 import com.example.back.mapper.SysUserRoleMapper;
@@ -19,10 +20,12 @@ import com.example.back.vo.CodeSubmitResultVO;
 import com.example.back.vo.TeacherStatsOverviewVO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -40,13 +43,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * T002: 关键流程集成测试骨架（认证、角色权限、关键接口连通性）。
  */
-@WebMvcTest({
+@SpringBootTest(classes = ApiSecurityFlowSkeletonTest.TestApplication.class)
+@AutoConfigureMockMvc
+@Import({
         CodeProblemController.class,
         TeacherController.class,
-        AdminUserController.class
+        AdminUserController.class,
+        GlobalExceptionHandler.class,
+        com.example.back.config.SecurityConfig.class,
+        JwtAuthFilter.class
 })
-@AutoConfigureMockMvc
-@Import({com.example.back.config.SecurityConfig.class, JwtAuthFilter.class})
 class ApiSecurityFlowSkeletonTest {
 
     @Autowired
@@ -160,5 +166,10 @@ class ApiSecurityFlowSkeletonTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.totalCourses").value(3));
+    }
+
+    @SpringBootConfiguration
+    @EnableAutoConfiguration
+    static class TestApplication {
     }
 }

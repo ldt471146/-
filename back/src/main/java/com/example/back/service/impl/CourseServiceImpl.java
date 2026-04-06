@@ -228,6 +228,14 @@ public class CourseServiceImpl implements CourseService {
         if (courses == null || courses.isEmpty()) {
             return List.of();
         }
+        java.util.Map<Long, Integer> lessonCountMap = courses.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        EduCourse::getId,
+                        course -> {
+                            Integer total = lessonMapper.countByCourse(course.getId());
+                            return total == null ? 0 : total;
+                        }
+                ));
         java.util.Set<Long> teacherIds = courses.stream()
                 .map(EduCourse::getTeacherId)
                 .filter(java.util.Objects::nonNull)
@@ -248,7 +256,7 @@ public class CourseServiceImpl implements CourseService {
             vo.setCreatedAt(c.getCreatedAt());
             vo.setUpdatedAt(c.getUpdatedAt());
             vo.setTeacherName(teacherMap.getOrDefault(c.getTeacherId(), "-"));
-            vo.setTotalLessons(0);
+            vo.setTotalLessons(lessonCountMap.getOrDefault(c.getId(), 0));
             vo.setFinishedLessons(0);
             vo.setProgress(0);
             vo.setLastLessonId(null);

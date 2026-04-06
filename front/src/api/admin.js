@@ -5,12 +5,15 @@ export const reviewTeacherApply = (id, data) =>
   http.post(`/api/admin/teacher-apply/${id}/review`, data)
 
 export const fetchAdminUsers = (params) => http.get('/api/admin/users', { params })
+export const fetchAdminUserOverview = (params) => http.get('/api/admin/users/overview', { params })
 export const updateAdminUserStatus = (id, data) => http.put(`/api/admin/users/${id}/status`, data)
 export const updateAdminUserRoles = (id, data) => http.put(`/api/admin/users/${id}/roles`, data)
 
 export const fetchAdminCourses = (params) => http.get('/api/admin/courses', { params })
+export const fetchAdminCourseOverview = (params) => http.get('/api/admin/courses/overview', { params })
 export const reviewAdminCourse = (id, data) => http.post(`/api/admin/courses/${id}/review`, data)
 
+export const fetchAdminCommunityOverview = () => http.get('/api/admin/community/overview')
 export const fetchAdminCommunityPosts = (params) => http.get('/api/admin/community/posts', { params })
 export const fetchAdminCommunityReplies = (params) => http.get('/api/admin/community/replies', { params })
 export const reviewAdminCommunityPost = (id, data) => http.post(`/api/admin/community/posts/${id}/review`, data)

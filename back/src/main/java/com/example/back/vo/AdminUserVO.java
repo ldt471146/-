@@ -14,6 +14,7 @@ public class AdminUserVO {
     private String username;
     private String email;
     private String phone;
+    private String avatar;
     private Integer status;
     private Integer muteStatus;
     private String banReason;

@@ -1,62 +1,49 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Login from '../pages/Login.vue'
-import Dashboard from '../pages/Dashboard.vue'
-import Courses from '../pages/Courses.vue'
-import CourseDetail from '../pages/CourseDetail.vue'
-import Practice from '../pages/Practice.vue'
-import CodePractice from '../pages/CodePractice.vue'
-import LearningPath from '../pages/LearningPath.vue'
-import Community from '../pages/Community.vue'
-import CommunityPostDetail from '../pages/CommunityPostDetail.vue'
-import Reports from '../pages/Reports.vue'
-import Exams from '../pages/Exams.vue'
-import Homework from '../pages/Homework.vue'
-import Profile from '../pages/Profile.vue'
-import Notices from '../pages/Notices.vue'
-import TeacherDashboard from '../pages/TeacherDashboard.vue'
-import TeacherCourseDetail from '../pages/TeacherCourseDetail.vue'
-import TeacherQuestions from '../pages/TeacherQuestions.vue'
-import TeacherExams from '../pages/TeacherExams.vue'
-import TeacherHomework from '../pages/TeacherHomework.vue'
-import TeacherStats from '../pages/TeacherStats.vue'
-import AdminTeacherApply from '../pages/AdminTeacherApply.vue'
-import AdminUsers from '../pages/AdminUsers.vue'
-import AdminCourses from '../pages/AdminCourses.vue'
-import AdminCommunity from '../pages/AdminCommunity.vue'
-import AppLayout from '../layouts/AppLayout.vue'
-import { getToken } from '../utils/auth'
+import { getMe } from '../api/auth'
+import { getToken, clearToken, getRemember } from '../utils/auth'
+import {
+  clearStoredUser,
+  getRoleHome,
+  getStoredUser,
+  hasRequiredRole,
+  setActiveRole,
+  setStoredUser
+} from '../utils/session'
+
+const loadPage = (view) => () => import(`../pages/${view}.vue`)
 
 const routes = [
   { path: '/', redirect: '/login' },
-  { path: '/login', component: Login },
+  { path: '/login', component: loadPage('Login') },
   {
     path: '/',
-    component: AppLayout,
+    component: () => import('../layouts/AppLayout.vue'),
     meta: { requiresAuth: true },
     children: [
-      { path: 'dashboard', component: Dashboard },
-      { path: 'courses', component: Courses },
-      { path: 'courses/:id', component: CourseDetail },
-      { path: 'practice', component: Practice },
-      { path: 'code-practice', component: CodePractice },
-      { path: 'learning-path', component: LearningPath },
-      { path: 'community', component: Community },
-      { path: 'community/:id', component: CommunityPostDetail },
-      { path: 'profile', component: Profile },
-      { path: 'notices', component: Notices },
-      { path: 'reports', component: Reports },
-      { path: 'exams', component: Exams },
-      { path: 'homework', component: Homework },
-      { path: 'teacher', component: TeacherDashboard },
-      { path: 'teacher/questions', component: TeacherQuestions },
-      { path: 'teacher/exams', component: TeacherExams },
-      { path: 'teacher/homework', component: TeacherHomework },
-      { path: 'teacher/stats', component: TeacherStats },
-      { path: 'teacher/courses/:id', component: TeacherCourseDetail },
-      { path: 'admin/users', component: AdminUsers },
-      { path: 'admin/courses', component: AdminCourses },
-      { path: 'admin/community', component: AdminCommunity },
-      { path: 'admin/teacher-apply', component: AdminTeacherApply }
+      { path: 'dashboard', component: loadPage('Dashboard'), meta: { roles: ['STUDENT'] } },
+      { path: 'courses', component: loadPage('Courses'), meta: { roles: ['STUDENT'] } },
+      { path: 'courses/:id', component: loadPage('CourseDetail'), meta: { roles: ['STUDENT'] } },
+      { path: 'practice', component: loadPage('Practice'), meta: { roles: ['STUDENT'] } },
+      { path: 'code-practice', component: loadPage('CodePractice'), meta: { roles: ['STUDENT'] } },
+      { path: 'learning-path', component: loadPage('LearningPath'), meta: { roles: ['STUDENT'] } },
+      { path: 'community', component: loadPage('Community'), meta: { roles: ['STUDENT', 'TEACHER', 'ADMIN'] } },
+      { path: 'community/:id', component: loadPage('CommunityPostDetail'), meta: { roles: ['STUDENT', 'TEACHER', 'ADMIN'] } },
+      { path: 'profile', component: loadPage('Profile') },
+      { path: 'notices', component: loadPage('Notices') },
+      { path: 'reports', component: loadPage('Reports'), meta: { roles: ['STUDENT'] } },
+      { path: 'exams', component: loadPage('Exams'), meta: { roles: ['STUDENT'] } },
+      { path: 'homework', component: loadPage('Homework'), meta: { roles: ['STUDENT'] } },
+      { path: 'teacher', component: loadPage('TeacherDashboard'), meta: { roles: ['TEACHER'] } },
+      { path: 'teacher/questions', component: loadPage('TeacherQuestions'), meta: { roles: ['TEACHER'] } },
+      { path: 'teacher/exams', component: loadPage('TeacherExams'), meta: { roles: ['TEACHER'] } },
+      { path: 'teacher/homework', component: loadPage('TeacherHomework'), meta: { roles: ['TEACHER'] } },
+      { path: 'teacher/stats', component: loadPage('TeacherStats'), meta: { roles: ['TEACHER'] } },
+      { path: 'teacher/courses/:id', component: loadPage('TeacherCourseDetail'), meta: { roles: ['TEACHER'] } },
+      { path: 'admin', component: loadPage('AdminDashboard'), meta: { roles: ['ADMIN'] } },
+      { path: 'admin/users', component: loadPage('AdminUsers'), meta: { roles: ['ADMIN'] } },
+      { path: 'admin/courses', component: loadPage('AdminCourses'), meta: { roles: ['ADMIN'] } },
+      { path: 'admin/community', component: loadPage('AdminCommunity'), meta: { roles: ['ADMIN'] } },
+      { path: 'admin/teacher-apply', component: loadPage('AdminTeacherApply'), meta: { roles: ['ADMIN'] } }
     ]
   }
 ]
@@ -66,15 +53,59 @@ const router = createRouter({
   routes
 })
 
-// 简单路由守卫：有 token 才能进入受保护页面
-router.beforeEach((to) => {
-  const token = getToken()
-  if (to.path === '/login' && token) {
-    return '/dashboard'
+const ensureCurrentUser = async () => {
+  const cachedUser = getStoredUser()
+  if (cachedUser) {
+    return cachedUser
   }
+  const token = getToken()
+  if (!token) {
+    return null
+  }
+  try {
+    const response = await getMe()
+    const user = response.data || null
+    if (user) {
+      setStoredUser(user, getRemember())
+    }
+    return user
+  } catch {
+    clearToken()
+    clearStoredUser()
+    return null
+  }
+}
+
+router.beforeEach(async (to) => {
+  const token = getToken()
+  if (to.path === '/login') {
+    if (!token) return true
+    const user = await ensureCurrentUser()
+    return user ? getRoleHome(user) : true
+  }
+
   if (to.meta.requiresAuth && !token) {
     return '/login'
   }
+
+  const requiredRoles = to.meta.roles || []
+  if (!requiredRoles.length) {
+    return true
+  }
+
+  const user = await ensureCurrentUser()
+  if (!user) {
+    return '/login'
+  }
+
+  if (!hasRequiredRole(user, requiredRoles)) {
+    return getRoleHome(user)
+  }
+
+  if (requiredRoles.length === 1) {
+    setActiveRole(requiredRoles[0], getRemember())
+  }
+
   return true
 })
 

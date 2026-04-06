@@ -28,6 +28,8 @@ import java.util.Set;
 @Service
 public class AiServiceImpl implements AiService {
 
+    private static final String CHAT_COMPLETIONS_PATH = "/chat/completions";
+
     private final RestTemplate restTemplate;
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -42,7 +44,7 @@ public class AiServiceImpl implements AiService {
         if (aiProperties.getApiKey() == null || aiProperties.getApiKey().isBlank()) {
             throw new IllegalArgumentException("AI API Key 未配置");
         }
-        String url = aiProperties.getBaseUrl() + "/chat/completions";
+        String url = buildChatCompletionsUrl(aiProperties.getBaseUrl());
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(aiProperties.getApiKey());
@@ -50,7 +52,7 @@ public class AiServiceImpl implements AiService {
         List<Map<String, String>> messages = new ArrayList<>();
         messages.add(Map.of(
                 "role", "system",
-                "content", "你是青少年编程平台的友好助手，回答要简洁、清晰、有步骤。"
+                "content", "你是青少年编程学习平台的教学助理。回答要专业、简洁、清晰，优先给出可执行步骤，避免过度口语化和娱乐化表达。"
         ));
         if (request.getHistory() != null) {
             for (AiChatRequest.AiMessage m : request.getHistory()) {
@@ -112,6 +114,20 @@ public class AiServiceImpl implements AiService {
         }
         log.error("All AI models failed: {}", lastError);
         return "AI 服务当前繁忙或模型通道不可用，请稍后重试。";
+    }
+
+    String buildChatCompletionsUrl(String baseUrl) {
+        if (baseUrl == null || baseUrl.isBlank()) {
+            throw new IllegalArgumentException("AI Base URL 未配置");
+        }
+        String trimmed = baseUrl.trim();
+        if (trimmed.endsWith(CHAT_COMPLETIONS_PATH)) {
+            return trimmed;
+        }
+        if (trimmed.endsWith("/")) {
+            return trimmed.substring(0, trimmed.length() - 1) + CHAT_COMPLETIONS_PATH;
+        }
+        return trimmed + CHAT_COMPLETIONS_PATH;
     }
 
     private boolean isRetryableModelError(String body) {

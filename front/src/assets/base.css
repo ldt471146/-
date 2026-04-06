@@ -38,6 +38,30 @@
   --ui-accent-2: #38bdf8;
   --ui-border: rgba(94, 247, 194, 0.2);
   --ui-border-soft: rgba(94, 247, 194, 0.12);
+  --ui-shell-backdrop: linear-gradient(180deg, rgba(3, 12, 22, 0.96), rgba(5, 10, 18, 1));
+  --ui-shell-orb-1: radial-gradient(circle at top left, rgba(86, 255, 213, 0.18), transparent 24%);
+  --ui-shell-orb-2: radial-gradient(circle at 82% 10%, rgba(0, 210, 255, 0.16), transparent 22%);
+  --ui-shell-orb-3: radial-gradient(circle at 54% 100%, rgba(94, 247, 194, 0.08), transparent 28%);
+  --ui-grid-line: rgba(255, 255, 255, 0.03);
+  --ui-grid-opacity: 0.28;
+  --ui-chip-bg: rgba(255, 255, 255, 0.04);
+  --ui-chip-border: rgba(255, 255, 255, 0.08);
+  --ui-chip-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
+  --ui-content-bg: linear-gradient(180deg, rgba(9, 22, 38, 0.72), rgba(5, 14, 24, 0.76));
+  --ui-content-shadow: 0 18px 48px rgba(0, 0, 0, 0.2);
+  --ui-aside-bg: linear-gradient(180deg, rgba(7, 21, 34, 0.92), rgba(5, 13, 22, 0.9));
+  --ui-aside-border: rgba(255, 255, 255, 0.08);
+  --ui-aside-title: #f3fbff;
+  --ui-aside-muted: rgba(214, 232, 255, 0.56);
+  --ui-aside-body: rgba(226, 240, 255, 0.76);
+  --ui-aside-card-bg: linear-gradient(180deg, rgba(86, 255, 213, 0.08), rgba(255, 255, 255, 0.02));
+  --ui-aside-card-border: rgba(86, 255, 213, 0.16);
+  --ui-aside-card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --ui-aside-hover-bg: rgba(255, 255, 255, 0.05);
+  --ui-brand-bg: linear-gradient(135deg, rgba(86, 255, 213, 0.2), rgba(0, 210, 255, 0.22));
+  --ui-brand-border: rgba(86, 255, 213, 0.28);
+  --ui-brand-text: #7bffcf;
+  --ui-menu-icon: #7deed0;
   --color-background: var(--vt-c-white);
   --color-background-soft: var(--vt-c-white-soft);
   --color-background-mute: var(--vt-c-white-mute);
@@ -78,6 +102,17 @@
   --ui-accent-2: #38bdf8;
   --ui-border: rgba(94, 247, 194, 0.2);
   --ui-border-soft: rgba(94, 247, 194, 0.12);
+  --ui-shell-backdrop: linear-gradient(180deg, #030c16, #050a12 55%, #02060b);
+  --ui-shell-orb-1: radial-gradient(circle at 14% 12%, rgba(94, 247, 194, 0.2), transparent 24%);
+  --ui-shell-orb-2: radial-gradient(circle at 82% 10%, rgba(56, 189, 248, 0.16), transparent 24%);
+  --ui-shell-orb-3: radial-gradient(circle at 58% 100%, rgba(94, 247, 194, 0.1), transparent 30%);
+  --ui-grid-line: rgba(255, 255, 255, 0.03);
+  --ui-grid-opacity: 0.28;
+  --ui-chip-bg: rgba(255, 255, 255, 0.04);
+  --ui-chip-border: rgba(255, 255, 255, 0.08);
+  --ui-chip-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
+  --ui-content-bg: linear-gradient(180deg, rgba(9, 22, 38, 0.72), rgba(5, 14, 24, 0.76));
+  --ui-content-shadow: 0 18px 48px rgba(0, 0, 0, 0.2);
 }
 
 :root[data-theme='red'] {
@@ -91,6 +126,30 @@
   --ui-accent-2: #ffb454;
   --ui-border: rgba(255, 84, 111, 0.28);
   --ui-border-soft: rgba(255, 84, 111, 0.18);
+  --ui-shell-backdrop: linear-gradient(180deg, #18070c, #13060b 52%, #090305);
+  --ui-shell-orb-1: radial-gradient(circle at 18% 14%, rgba(255, 84, 111, 0.24), transparent 26%);
+  --ui-shell-orb-2: radial-gradient(circle at 78% 12%, rgba(255, 180, 84, 0.16), transparent 24%);
+  --ui-shell-orb-3: radial-gradient(circle at 52% 100%, rgba(255, 84, 111, 0.12), transparent 30%);
+  --ui-grid-line: rgba(255, 255, 255, 0.028);
+  --ui-grid-opacity: 0.32;
+  --ui-chip-bg: rgba(255, 255, 255, 0.045);
+  --ui-chip-border: rgba(255, 255, 255, 0.09);
+  --ui-chip-shadow: 0 14px 34px rgba(30, 6, 12, 0.36);
+  --ui-content-bg: linear-gradient(180deg, rgba(33, 11, 17, 0.82), rgba(20, 8, 14, 0.78));
+  --ui-content-shadow: 0 18px 48px rgba(24, 6, 10, 0.32);
+  --ui-aside-bg: linear-gradient(180deg, rgba(31, 9, 15, 0.96), rgba(21, 7, 12, 0.94));
+  --ui-aside-border: rgba(255, 255, 255, 0.08);
+  --ui-aside-title: #fff4f5;
+  --ui-aside-muted: rgba(255, 226, 232, 0.58);
+  --ui-aside-body: rgba(255, 235, 238, 0.8);
+  --ui-aside-card-bg: linear-gradient(180deg, rgba(255, 84, 111, 0.11), rgba(255, 180, 84, 0.05));
+  --ui-aside-card-border: rgba(255, 84, 111, 0.18);
+  --ui-aside-card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --ui-aside-hover-bg: rgba(255, 255, 255, 0.05);
+  --ui-brand-bg: linear-gradient(135deg, rgba(255, 84, 111, 0.24), rgba(255, 180, 84, 0.22));
+  --ui-brand-border: rgba(255, 84, 111, 0.3);
+  --ui-brand-text: #ffe3e8;
+  --ui-menu-icon: #ff8ca1;
 }
 
 :root[data-theme='aurora'] {
@@ -104,6 +163,30 @@
   --ui-accent-2: #22c55e;
   --ui-border: rgba(148, 163, 184, 0.6);
   --ui-border-soft: rgba(148, 163, 184, 0.35);
+  --ui-shell-backdrop: linear-gradient(180deg, #f8fbff, #eef5ff 52%, #f6fbff);
+  --ui-shell-orb-1: radial-gradient(circle at 12% 10%, rgba(14, 165, 233, 0.18), transparent 26%);
+  --ui-shell-orb-2: radial-gradient(circle at 86% 12%, rgba(34, 197, 94, 0.15), transparent 22%);
+  --ui-shell-orb-3: radial-gradient(circle at 50% 100%, rgba(168, 85, 247, 0.08), transparent 30%);
+  --ui-grid-line: rgba(15, 23, 42, 0.06);
+  --ui-grid-opacity: 0.18;
+  --ui-chip-bg: rgba(255, 255, 255, 0.84);
+  --ui-chip-border: rgba(148, 163, 184, 0.42);
+  --ui-chip-shadow: 0 12px 28px rgba(148, 163, 184, 0.2);
+  --ui-content-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.9));
+  --ui-content-shadow: 0 18px 48px rgba(148, 163, 184, 0.24);
+  --ui-aside-bg: linear-gradient(180deg, rgba(235, 244, 255, 0.96), rgba(223, 236, 252, 0.94));
+  --ui-aside-border: rgba(96, 165, 250, 0.24);
+  --ui-aside-title: #0f172a;
+  --ui-aside-muted: rgba(51, 65, 85, 0.72);
+  --ui-aside-body: rgba(30, 41, 59, 0.84);
+  --ui-aside-card-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(239, 246, 255, 0.9));
+  --ui-aside-card-border: rgba(59, 130, 246, 0.16);
+  --ui-aside-card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 10px 20px rgba(148, 163, 184, 0.16);
+  --ui-aside-hover-bg: rgba(14, 165, 233, 0.08);
+  --ui-brand-bg: linear-gradient(135deg, rgba(14, 165, 233, 0.16), rgba(34, 197, 94, 0.14));
+  --ui-brand-border: rgba(14, 165, 233, 0.22);
+  --ui-brand-text: #0369a1;
+  --ui-menu-icon: #0ea5e9;
 }
 
 @media (prefers-color-scheme: dark) {

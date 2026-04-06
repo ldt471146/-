@@ -1,8 +1,10 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { getMe, sendCode } from '../api/auth'
-import { changePassword, updateProfile } from '../api/user'
+import { changePassword, updateProfile, uploadAvatar } from '../api/user'
 import { ElNotification } from 'element-plus'
+
+const MAX_AVATAR_SIZE = 2 * 1024 * 1024
 
 const profile = ref({
   username: '',
@@ -12,20 +14,20 @@ const profile = ref({
 })
 const errors = ref({
   username: '',
-  avatar: '',
   phone: ''
 })
 const touched = ref({
   username: false,
-  avatar: false,
   phone: false
 })
 
 const loading = ref(false)
 const saving = ref(false)
+const avatarUploading = ref(false)
 const passwordLoading = ref(false)
 const codeSending = ref(false)
 const countdown = ref(0)
+const fileInputRef = ref(null)
 let timer = null
 
 const pwd = ref({
@@ -35,16 +37,24 @@ const pwd = ref({
   code: ''
 })
 
+const emitProfileUpdate = (payload) => {
+  window.dispatchEvent(new CustomEvent('profile-updated', { detail: payload }))
+}
+
+const applyProfile = (payload = {}) => {
+  profile.value = {
+    username: payload.username ?? profile.value.username,
+    email: payload.email ?? profile.value.email,
+    avatar: payload.avatar ?? profile.value.avatar,
+    phone: payload.phone ?? profile.value.phone
+  }
+}
+
 const load = async () => {
   loading.value = true
   try {
     const res = await getMe()
-    profile.value = {
-      username: res.data?.username || '',
-      email: res.data?.email || '',
-      avatar: res.data?.avatar || '',
-      phone: res.data?.phone || ''
-    }
+    applyProfile(res.data || {})
   } catch (e) {
     ElNotification({
       title: '加载失败',
@@ -57,11 +67,35 @@ const load = async () => {
   }
 }
 
+const validateField = (field) => {
+  if (field === 'username') {
+    if (!profile.value.username) {
+      errors.value.username = '昵称不能为空'
+    } else if (profile.value.username.length < 2 || profile.value.username.length > 20) {
+      errors.value.username = '昵称长度 2-20 位'
+    } else {
+      errors.value.username = ''
+    }
+  }
+  if (field === 'phone') {
+    if (!profile.value.phone) {
+      errors.value.phone = ''
+      return
+    }
+    const ok = /^1\d{10}$/.test(profile.value.phone)
+    errors.value.phone = ok ? '' : '手机号格式不正确'
+  }
+}
+
+const onBlur = (field) => {
+  touched.value[field] = true
+  validateField(field)
+}
+
 const saveProfile = async () => {
   validateField('username')
-  validateField('avatar')
   validateField('phone')
-  if (errors.value.username || errors.value.avatar || errors.value.phone) {
+  if (errors.value.username || errors.value.phone) {
     ElNotification({
       title: '请检查输入',
       message: '资料格式不正确',
@@ -77,8 +111,8 @@ const saveProfile = async () => {
       avatar: profile.value.avatar,
       phone: profile.value.phone
     })
-    profile.value = { ...profile.value, ...res.data }
-    window.dispatchEvent(new CustomEvent('profile-updated', { detail: res.data }))
+    applyProfile(res.data || {})
+    emitProfileUpdate(res.data || {})
     ElNotification({
       title: '保存成功',
       message: '个人资料已更新',
@@ -94,6 +128,38 @@ const saveProfile = async () => {
     })
   } finally {
     saving.value = false
+  }
+}
+
+const openAvatarPicker = () => {
+  if (avatarUploading.value) return
+  fileInputRef.value?.click()
+}
+
+const onAvatarFileChange = async (event) => {
+  const file = event?.target?.files?.[0]
+  event.target.value = ''
+  if (!file) return
+  if (!file.type?.startsWith('image/')) {
+    ElNotification({ title: '文件格式不支持', message: '请上传图片文件', type: 'warning', duration: 1800 })
+    return
+  }
+  if (file.size > MAX_AVATAR_SIZE) {
+    ElNotification({ title: '图片过大', message: '头像大小不能超过 2MB', type: 'warning', duration: 1800 })
+    return
+  }
+  const formData = new FormData()
+  formData.append('file', file)
+  avatarUploading.value = true
+  try {
+    const res = await uploadAvatar(formData)
+    applyProfile(res.data || {})
+    emitProfileUpdate(res.data || {})
+    ElNotification({ title: '上传成功', message: '头像已更新', type: 'success', duration: 1600 })
+  } catch (e) {
+    ElNotification({ title: '上传失败', message: e?.message || '请稍后再试', type: 'error', duration: 2000 })
+  } finally {
+    avatarUploading.value = false
   }
 }
 
@@ -200,39 +266,6 @@ const sendEmailCode = async () => {
   }
 }
 
-const validateField = (field) => {
-  if (field === 'username') {
-    if (!profile.value.username) {
-      errors.value.username = '昵称不能为空'
-    } else if (profile.value.username.length < 2 || profile.value.username.length > 20) {
-      errors.value.username = '昵称长度 2-20 位'
-    } else {
-      errors.value.username = ''
-    }
-  }
-  if (field === 'avatar') {
-    if (!profile.value.avatar) {
-      errors.value.avatar = ''
-      return
-    }
-    const ok = /^https?:\/\/.+/i.test(profile.value.avatar)
-    errors.value.avatar = ok ? '' : '头像链接需以 http/https 开头'
-  }
-  if (field === 'phone') {
-    if (!profile.value.phone) {
-      errors.value.phone = ''
-      return
-    }
-    const ok = /^1\d{10}$/.test(profile.value.phone)
-    errors.value.phone = ok ? '' : '手机号格式不正确'
-  }
-}
-
-const onBlur = (field) => {
-  touched.value[field] = true
-  validateField(field)
-}
-
 onMounted(load)
 
 onBeforeUnmount(() => {
@@ -270,18 +303,27 @@ onBeforeUnmount(() => {
           <div class="panel">
             <div class="panel-title">基本资料</div>
             <div class="panel-sub">更新昵称、头像、手机号</div>
-            <!-- TODO: 后续支持头像上传（MinIO），替换当前“头像链接”手填方式 -->
+
+            <div class="avatar-uploader">
+              <el-avatar :src="profile.avatar" :size="88" class="avatar-preview">
+                {{ profile.username?.slice(0, 1) || '同' }}
+              </el-avatar>
+              <div class="avatar-uploader__body">
+                <div class="avatar-uploader__title">上传头像</div>
+                <div class="avatar-uploader__hint">支持 JPG / PNG / WEBP，大小不超过 2MB，上传后自动保存。</div>
+                <div class="avatar-uploader__actions">
+                  <el-button type="primary" :loading="avatarUploading" @click="openAvatarPicker">选择图片</el-button>
+                  <span v-if="profile.avatar" class="avatar-uploader__path">当前地址：{{ profile.avatar }}</span>
+                </div>
+                <input ref="fileInputRef" class="file-input" type="file" accept="image/*" @change="onAvatarFileChange" />
+              </div>
+            </div>
 
             <div class="form">
               <label class="field">
                 <span>昵称</span>
                 <input v-model="profile.username" placeholder="你的昵称" @blur="onBlur('username')" />
                 <em v-if="touched.username && errors.username" class="field-tip">{{ errors.username }}</em>
-              </label>
-              <label class="field">
-                <span>头像链接</span>
-                <input v-model="profile.avatar" placeholder="https://..." @blur="onBlur('avatar')" />
-                <em v-if="touched.avatar && errors.avatar" class="field-tip">{{ errors.avatar }}</em>
               </label>
               <label class="field">
                 <span>手机号</span>
@@ -408,6 +450,51 @@ onBeforeUnmount(() => {
   color: var(--ui-text-muted);
 }
 
+.avatar-uploader {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 16px;
+  align-items: center;
+  margin-top: 8px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--ui-border-soft);
+  background: var(--ui-surface-soft);
+}
+
+.avatar-preview {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.14);
+}
+
+.avatar-uploader__body {
+  display: grid;
+  gap: 8px;
+}
+
+.avatar-uploader__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ui-text);
+}
+
+.avatar-uploader__hint,
+.avatar-uploader__path {
+  font-size: 12px;
+  color: var(--ui-text-muted);
+  line-height: 1.7;
+}
+
+.avatar-uploader__actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.file-input {
+  display: none;
+}
+
 .form {
   display: grid;
   gap: 12px;
@@ -490,5 +577,13 @@ onBeforeUnmount(() => {
   height: 320px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 768px) {
+  .hero,
+  .avatar-uploader {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
 }
 </style>

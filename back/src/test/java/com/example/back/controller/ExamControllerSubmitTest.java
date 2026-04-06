@@ -1,12 +1,16 @@
 package com.example.back.controller;
 
+import com.example.back.exception.GlobalExceptionHandler;
 import com.example.back.service.ExamService;
 import com.example.back.vo.ExamSubmitVO;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -19,8 +23,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(ExamController.class)
+@SpringBootTest(classes = ExamControllerSubmitTest.TestApplication.class)
 @AutoConfigureMockMvc(addFilters = false)
+@Import({ExamController.class, GlobalExceptionHandler.class})
 class ExamControllerSubmitTest {
 
     @Autowired
@@ -68,5 +73,10 @@ class ExamControllerSubmitTest {
                 .andExpect(jsonPath("$.message").value("考试ID不能为空"));
 
         verifyNoInteractions(examService);
+    }
+
+    @SpringBootConfiguration
+    @EnableAutoConfiguration
+    static class TestApplication {
     }
 }

@@ -9,6 +9,7 @@ import com.example.back.entity.SysUser;
 import com.example.back.mapper.EduCourseMapper;
 import com.example.back.mapper.SysUserMapper;
 import com.example.back.service.AuditLogService;
+import com.example.back.vo.AdminCourseOverviewVO;
 import com.example.back.vo.AdminCourseVO;
 import com.example.back.vo.PageResultVO;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,7 +21,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 管理员-课程审核
+ * 管理员课程审核与治理
  */
 @RestController
 @RequestMapping("/api/admin/courses")
@@ -46,40 +47,22 @@ public class AdminCourseController {
             @RequestParam(value = "page", defaultValue = "1") long page,
             @RequestParam(value = "size", defaultValue = "10") long size
     ) {
-        Page<EduCourse> mpPage = new Page<>(page, size);
-        LambdaQueryWrapper<EduCourse> wrapper = new LambdaQueryWrapper<EduCourse>()
-                .eq(status != null, EduCourse::getStatus, status)
-                .orderByDesc(EduCourse::getId);
-        if (keyword != null && !keyword.isBlank()) {
-            wrapper.like(EduCourse::getTitle, keyword.trim());
-        }
-        Page<EduCourse> result = courseMapper.selectPage(mpPage, wrapper);
+        Page<EduCourse> result = courseMapper.selectPage(new Page<>(page, size), buildCourseWrapper(keyword, status, true));
+        return ApiResponse.ok(toPageResult(result, page, size));
+    }
 
-        Set<Long> teacherIds = result.getRecords().stream()
-                .map(EduCourse::getTeacherId)
-                .filter(v -> v != null)
-                .collect(Collectors.toSet());
-        Map<Long, String> teacherMap = userMapper.selectBatchIds(teacherIds).stream()
-                .collect(Collectors.toMap(SysUser::getId, SysUser::getUsername));
-
-        List<AdminCourseVO> records = result.getRecords().stream().map(c -> {
-            AdminCourseVO vo = new AdminCourseVO();
-            vo.setId(c.getId());
-            vo.setTitle(c.getTitle());
-            vo.setTeacherId(c.getTeacherId());
-            vo.setTeacherName(teacherMap.getOrDefault(c.getTeacherId(), "-"));
-            vo.setStatus(c.getStatus());
-            vo.setFinishStatus(c.getFinishStatus());
-            vo.setCreatedAt(c.getCreatedAt());
-            vo.setUpdatedAt(c.getUpdatedAt());
-            return vo;
-        }).collect(Collectors.toList());
-
-        PageResultVO<AdminCourseVO> vo = new PageResultVO<>();
-        vo.setPage(page);
-        vo.setSize(size);
-        vo.setTotal(result.getTotal());
-        vo.setRecords(records);
+    @GetMapping("/overview")
+    public ApiResponse<AdminCourseOverviewVO> overview(
+            @RequestParam(value = "keyword", required = false) String keyword
+    ) {
+        List<EduCourse> courses = courseMapper.selectList(buildCourseWrapper(keyword, null, false));
+        AdminCourseOverviewVO vo = new AdminCourseOverviewVO();
+        vo.setTotalCourses((long) courses.size());
+        vo.setPublishedCourses(courses.stream().filter(course -> course.getStatus() != null && course.getStatus() == 1).count());
+        vo.setUnpublishedCourses(courses.stream().filter(course -> course.getStatus() == null || course.getStatus() != 1).count());
+        vo.setFinishedCourses(courses.stream().filter(course -> course.getFinishStatus() != null && course.getFinishStatus() == 1).count());
+        vo.setUpdatingCourses(courses.stream().filter(course -> course.getFinishStatus() == null || course.getFinishStatus() != 1).count());
+        vo.setTeacherCount(courses.stream().map(EduCourse::getTeacherId).filter(id -> id != null).distinct().count());
         return ApiResponse.ok(vo);
     }
 
@@ -102,5 +85,47 @@ public class AdminCourseController {
                 "课程审核状态变更为: " + request.getStatus()
         );
         return ApiResponse.ok();
+    }
+
+    private LambdaQueryWrapper<EduCourse> buildCourseWrapper(String keyword, Integer status, boolean withOrder) {
+        LambdaQueryWrapper<EduCourse> wrapper = new LambdaQueryWrapper<EduCourse>()
+                .eq(status != null, EduCourse::getStatus, status);
+        if (keyword != null && !keyword.isBlank()) {
+            wrapper.like(EduCourse::getTitle, keyword.trim());
+        }
+        if (withOrder) {
+            wrapper.orderByDesc(EduCourse::getId);
+        }
+        return wrapper;
+    }
+
+    private PageResultVO<AdminCourseVO> toPageResult(Page<EduCourse> result, long page, long size) {
+        Set<Long> teacherIds = result.getRecords().stream()
+                .map(EduCourse::getTeacherId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        Map<Long, String> teacherMap = teacherIds.isEmpty()
+                ? Map.of()
+                : userMapper.selectBatchIds(teacherIds).stream().collect(Collectors.toMap(SysUser::getId, SysUser::getUsername));
+
+        List<AdminCourseVO> records = result.getRecords().stream().map(course -> {
+            AdminCourseVO vo = new AdminCourseVO();
+            vo.setId(course.getId());
+            vo.setTitle(course.getTitle());
+            vo.setTeacherId(course.getTeacherId());
+            vo.setTeacherName(teacherMap.getOrDefault(course.getTeacherId(), "-"));
+            vo.setStatus(course.getStatus());
+            vo.setFinishStatus(course.getFinishStatus());
+            vo.setCreatedAt(course.getCreatedAt());
+            vo.setUpdatedAt(course.getUpdatedAt());
+            return vo;
+        }).toList();
+
+        PageResultVO<AdminCourseVO> vo = new PageResultVO<>();
+        vo.setPage(page);
+        vo.setSize(size);
+        vo.setTotal(result.getTotal());
+        vo.setRecords(records);
+        return vo;
     }
 }

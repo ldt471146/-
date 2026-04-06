@@ -1,15 +1,19 @@
 package com.example.back.controller;
 
+import com.example.back.exception.GlobalExceptionHandler;
 import com.example.back.service.ExamService;
 import com.example.back.service.ExamTaskService;
 import com.example.back.vo.ExamCreateVO;
 import com.example.back.vo.ExamSubmissionVO;
 import com.example.back.vo.ExamTaskVO;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -20,8 +24,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(ExamTaskController.class)
+@SpringBootTest(classes = ExamTaskControllerWebTest.TestApplication.class)
 @AutoConfigureMockMvc(addFilters = false)
+@Import({ExamTaskController.class, GlobalExceptionHandler.class})
 class ExamTaskControllerWebTest {
 
     @Autowired
@@ -65,12 +70,17 @@ class ExamTaskControllerWebTest {
     void shouldStartTaskExam() throws Exception {
         ExamCreateVO createVO = new ExamCreateVO();
         createVO.setExamId("task_exam_1");
-        createVO.setDurationSeconds(1800);
+        createVO.setDurationMinutes(30);
         when(examService.createTaskExam(1L)).thenReturn(createVO);
 
         mockMvc.perform(post("/api/exam-tasks/1/start"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(0))
                 .andExpect(jsonPath("$.data.examId").value("task_exam_1"));
+    }
+
+    @SpringBootConfiguration
+    @EnableAutoConfiguration
+    static class TestApplication {
     }
 }

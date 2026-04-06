@@ -11,11 +11,87 @@
  Target Server Version : 80027
  File Encoding         : 65001
 
- Date: 12/02/2026 14:45:49
+ Date: 05/04/2026 13:32:31
 */
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for community_moderation
+-- ----------------------------
+DROP TABLE IF EXISTS `community_moderation`;
+CREATE TABLE `community_moderation`  (
+  `id` bigint(0) NOT NULL AUTO_INCREMENT,
+  `target_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `target_id` bigint(0) NOT NULL,
+  `action` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `operator_id` bigint(0) NOT NULL,
+  `created_at` datetime(0) NOT NULL,
+  `updated_at` datetime(0) NOT NULL,
+  `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_community_moderation_target`(`target_type`, `target_id`) USING BTREE,
+  INDEX `idx_community_moderation_operator`(`operator_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of community_moderation
+-- ----------------------------
+INSERT INTO `community_moderation` VALUES (1, 'POST', 1, 'APPROVE', NULL, 1, '2026-02-12 19:55:40', '2026-02-12 19:55:40', 0);
+
+-- ----------------------------
+-- Table structure for community_post
+-- ----------------------------
+DROP TABLE IF EXISTS `community_post`;
+CREATE TABLE `community_post`  (
+  `id` bigint(0) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(0) NOT NULL,
+  `title` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `code_snippet` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
+  `status` tinyint(0) NOT NULL DEFAULT 1,
+  `best_reply_id` bigint(0) NULL DEFAULT NULL,
+  `view_count` int(0) NOT NULL DEFAULT 0,
+  `last_reply_at` datetime(0) NULL DEFAULT NULL,
+  `created_at` datetime(0) NOT NULL,
+  `updated_at` datetime(0) NOT NULL,
+  `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_community_post_user`(`user_id`) USING BTREE,
+  INDEX `idx_community_post_status`(`status`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of community_post
+-- ----------------------------
+INSERT INTO `community_post` VALUES (1, 3, '如何看待大模型取代程序员', '都滚去烤地瓜', NULL, 1, NULL, 11, '2026-02-12 18:42:47', '2026-02-12 18:42:29', '2026-02-12 18:42:29', 0);
+
+-- ----------------------------
+-- Table structure for community_reply
+-- ----------------------------
+DROP TABLE IF EXISTS `community_reply`;
+CREATE TABLE `community_reply`  (
+  `id` bigint(0) NOT NULL AUTO_INCREMENT,
+  `post_id` bigint(0) NOT NULL,
+  `user_id` bigint(0) NOT NULL,
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `code_snippet` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
+  `is_best` tinyint(0) NOT NULL DEFAULT 0,
+  `status` tinyint(0) NOT NULL DEFAULT 1,
+  `created_at` datetime(0) NOT NULL,
+  `updated_at` datetime(0) NOT NULL,
+  `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_community_reply_post`(`post_id`) USING BTREE,
+  INDEX `idx_community_reply_user`(`user_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of community_reply
+-- ----------------------------
+INSERT INTO `community_reply` VALUES (1, 1, 3, '烤地瓜去', NULL, 0, 1, '2026-02-12 18:42:47', '2026-02-12 18:42:47', 0);
 
 -- ----------------------------
 -- Table structure for edu_chapter
@@ -123,7 +199,7 @@ CREATE TABLE `edu_code_submission`  (
   `updated_at` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
   `is_deleted` tinyint(0) NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of edu_code_submission
@@ -133,6 +209,8 @@ INSERT INTO `edu_code_submission` VALUES (2, 1, 2, 50, '#include <iostream>\n#in
 INSERT INTO `edu_code_submission` VALUES (3, 1, 2, 50, '#include <iostream>\n#include <string>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    string s;\n    getline(cin, s);\n    reverse(s.begin(), s.end());\n    cout << s;\n    return 0;\n}\n', 'CE', 0, 2, '2026-02-12 12:17:28', '2026-02-12 12:17:28', 0);
 INSERT INTO `edu_code_submission` VALUES (4, 1, 2, 54, '#include <iostream>\n#include <string>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    string s;\n    getline(cin, s);\n    reverse(s.begin(), s.end());\n    cout << s;\n    return 0;\n}\n', 'CE', 0, 2, '2026-02-12 12:18:00', '2026-02-12 12:18:00', 0);
 INSERT INTO `edu_code_submission` VALUES (5, 1, 2, 54, '#include <iostream>\n#include <string>\n#include <algorithm>\nusing namespace std;\n\nint main() {\n    string s;\n    getline(cin, s);\n    reverse(s.begin(), s.end());\n    cout << s;\n    return 0;\n}\n', 'AC', 2, 2, '2026-02-12 12:23:31', '2026-02-12 12:23:31', 0);
+INSERT INTO `edu_code_submission` VALUES (6, 1, 2, 54, '#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    // TODO: write your code\n    return 0;\n}\n', 'CE', 0, 2, '2026-02-26 16:02:35', '2026-02-26 16:02:35', 0);
+INSERT INTO `edu_code_submission` VALUES (7, 1, 2, 54, '#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n\n    // TODO: write your code\n    return 0;\n}\n', 'CE', 0, 2, '2026-02-26 16:08:41', '2026-02-26 16:08:41', 0);
 
 -- ----------------------------
 -- Table structure for edu_code_testcase
@@ -148,7 +226,7 @@ CREATE TABLE `edu_code_testcase`  (
   `updated_at` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
   `is_deleted` tinyint(0) NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of edu_code_testcase
@@ -186,6 +264,8 @@ INSERT INTO `edu_course` VALUES (4, '前后端分离项目', 'https://i0.hdslb.c
 INSERT INTO `edu_course` VALUES (5, 'python', 'https://pixnio.com/free-images/2025/09/30/2025-09-30-16-13-06-576x720.jpeg', '好好学习天天向上', 3, 1, '2026-02-08 10:15:56', '2026-02-08 14:31:18', 1, 0);
 INSERT INTO `edu_course` VALUES (6, '二次元学习', 'https://i0.hdslb.com/bfs/article/3fe50ff428ab553dfcc38d8c5d75ca4bbb22abd7.jpg@1256w_686h_!web-article-pic.avif', '213123', 3, 1, '2026-02-08 11:34:42', '2026-02-08 11:43:37', 1, 0);
 INSERT INTO `edu_course` VALUES (7, 'java学习', '', '', 3, 1, '2026-02-08 15:18:06', '2026-02-08 15:18:06', 0, 0);
+INSERT INTO `edu_course` VALUES (8, 'java', '', '', 12, 1, '2026-04-05 13:06:16', '2026-04-05 13:06:28', 1, 0);
+INSERT INTO `edu_course` VALUES (9, '1', '', '21', 12, 1, '2026-04-05 13:06:25', '2026-04-05 13:06:30', 1, 0);
 
 -- ----------------------------
 -- Table structure for edu_course_enroll
@@ -201,7 +281,7 @@ CREATE TABLE `edu_course_enroll`  (
   `is_deleted` tinyint(0) NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_user_course`(`user_id`, `course_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of edu_course_enroll
@@ -211,6 +291,10 @@ INSERT INTO `edu_course_enroll` VALUES (2, 1, 3, 1, '2026-02-06 09:48:22', '2026
 INSERT INTO `edu_course_enroll` VALUES (3, 3, 5, 0, '2026-02-08 11:44:33', '2026-02-08 11:44:33', 0);
 INSERT INTO `edu_course_enroll` VALUES (4, 1, 5, 1, '2026-02-08 14:13:54', '2026-02-08 14:13:54', 0);
 INSERT INTO `edu_course_enroll` VALUES (5, 1, 7, 1, '2026-02-08 15:29:15', '2026-02-08 15:29:15', 0);
+INSERT INTO `edu_course_enroll` VALUES (6, 10, 7, 1, '2026-02-12 19:35:30', '2026-02-12 19:35:30', 0);
+INSERT INTO `edu_course_enroll` VALUES (7, 3, 7, 1, '2026-02-12 19:53:24', '2026-02-12 19:53:24', 0);
+INSERT INTO `edu_course_enroll` VALUES (8, 1, 4, 1, '2026-02-26 16:08:21', '2026-02-26 16:08:21', 0);
+INSERT INTO `edu_course_enroll` VALUES (9, 11, 3, 1, '2026-04-05 13:05:23', '2026-04-05 13:05:23', 0);
 
 -- ----------------------------
 -- Table structure for edu_exam_submission
@@ -313,7 +397,7 @@ CREATE TABLE `edu_homework`  (
   `updated_at` datetime(0) NOT NULL,
   `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for edu_homework_problem
@@ -329,7 +413,61 @@ CREATE TABLE `edu_homework_problem`  (
   `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_hw_problem`(`homework_id`, `problem_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for edu_knowledge_dependency
+-- ----------------------------
+DROP TABLE IF EXISTS `edu_knowledge_dependency`;
+CREATE TABLE `edu_knowledge_dependency`  (
+  `id` bigint(0) NOT NULL AUTO_INCREMENT,
+  `from_point_id` bigint(0) NOT NULL,
+  `to_point_id` bigint(0) NOT NULL,
+  `created_at` datetime(0) NOT NULL,
+  `updated_at` datetime(0) NOT NULL,
+  `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_knowledge_dependency`(`from_point_id`, `to_point_id`) USING BTREE,
+  INDEX `idx_knowledge_to`(`to_point_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for edu_knowledge_point
+-- ----------------------------
+DROP TABLE IF EXISTS `edu_knowledge_point`;
+CREATE TABLE `edu_knowledge_point`  (
+  `id` bigint(0) NOT NULL AUTO_INCREMENT,
+  `course_id` bigint(0) NOT NULL,
+  `chapter_id` bigint(0) NULL DEFAULT NULL,
+  `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `description` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
+  `sort_no` int(0) NOT NULL DEFAULT 0,
+  `status` tinyint(0) NOT NULL DEFAULT 1,
+  `created_at` datetime(0) NOT NULL,
+  `updated_at` datetime(0) NOT NULL,
+  `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_knowledge_course`(`course_id`) USING BTREE,
+  INDEX `idx_knowledge_chapter`(`chapter_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for edu_knowledge_progress
+-- ----------------------------
+DROP TABLE IF EXISTS `edu_knowledge_progress`;
+CREATE TABLE `edu_knowledge_progress`  (
+  `id` bigint(0) NOT NULL AUTO_INCREMENT,
+  `user_id` bigint(0) NOT NULL,
+  `point_id` bigint(0) NOT NULL,
+  `status` tinyint(0) NOT NULL DEFAULT 0,
+  `score` int(0) NULL DEFAULT NULL,
+  `created_at` datetime(0) NOT NULL,
+  `updated_at` datetime(0) NOT NULL,
+  `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_knowledge_progress`(`user_id`, `point_id`) USING BTREE,
+  INDEX `idx_knowledge_progress_point`(`point_id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for edu_learn_record
@@ -347,7 +485,7 @@ CREATE TABLE `edu_learn_record`  (
   `learn_seconds` int(0) NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_user_lesson`(`user_id`, `lesson_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of edu_learn_record
@@ -375,7 +513,7 @@ CREATE TABLE `edu_lesson`  (
   `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_lesson_chapter`(`chapter_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 307 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 306 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of edu_lesson
@@ -415,7 +553,7 @@ CREATE TABLE `edu_question`  (
   `is_deleted` tinyint(0) NULL DEFAULT 0,
   `chapter_id` bigint(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 20 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 19 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of edu_question
@@ -453,7 +591,7 @@ CREATE TABLE `edu_question_favorite`  (
   `is_deleted` tinyint(0) NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_user_question`(`user_id`, `question_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of edu_question_favorite
@@ -476,7 +614,7 @@ CREATE TABLE `edu_question_option`  (
   `updated_at` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
   `is_deleted` tinyint(0) NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 77 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 76 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of edu_question_option
@@ -572,7 +710,7 @@ CREATE TABLE `edu_question_record`  (
   `updated_at` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
   `is_deleted` tinyint(0) NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 26 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 32 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of edu_question_record
@@ -602,6 +740,13 @@ INSERT INTO `edu_question_record` VALUES (22, 1, 7, 'C', 0, '2026-02-08 15:29:55
 INSERT INTO `edu_question_record` VALUES (23, 1, 10, 'C', 0, '2026-02-08 15:29:55', '2026-02-08 15:29:55', 0);
 INSERT INTO `edu_question_record` VALUES (24, 1, 9, 'B', 0, '2026-02-08 15:29:55', '2026-02-08 15:29:55', 0);
 INSERT INTO `edu_question_record` VALUES (25, 3, 19, 'B', 1, '2026-02-08 16:15:16', '2026-02-08 16:15:16', 0);
+INSERT INTO `edu_question_record` VALUES (26, 10, 6, 'B', 0, '2026-02-12 19:14:45', '2026-02-12 19:14:45', 0);
+INSERT INTO `edu_question_record` VALUES (27, 1, 6, 'B', 0, '2026-02-12 19:58:32', '2026-02-12 19:58:32', 0);
+INSERT INTO `edu_question_record` VALUES (28, 1, 5, 'B', 1, '2026-02-26 15:58:14', '2026-02-26 15:58:14', 0);
+INSERT INTO `edu_question_record` VALUES (29, 1, 4, 'C', 0, '2026-02-26 15:58:18', '2026-02-26 15:58:18', 0);
+INSERT INTO `edu_question_record` VALUES (30, 1, 6, 'C', 0, '2026-02-26 16:02:14', '2026-02-26 16:02:14', 0);
+INSERT INTO `edu_question_record` VALUES (31, 1, 6, 'B,C,D', 0, '2026-02-26 16:02:17', '2026-02-26 16:02:17', 0);
+INSERT INTO `edu_question_record` VALUES (32, 11, 5, 'B', 1, '2026-04-04 21:54:46', '2026-04-04 21:54:46', 0);
 
 -- ----------------------------
 -- Table structure for edu_wrong_question
@@ -616,7 +761,7 @@ CREATE TABLE `edu_wrong_question`  (
   `updated_at` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
   `is_deleted` tinyint(0) NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of edu_wrong_question
@@ -624,9 +769,9 @@ CREATE TABLE `edu_wrong_question`  (
 INSERT INTO `edu_wrong_question` VALUES (1, 1, 1, 2, '2026-02-06 09:59:45', '2026-02-06 09:59:45', 0);
 INSERT INTO `edu_wrong_question` VALUES (2, 1, 2, 2, '2026-02-06 09:59:54', '2026-02-06 09:59:54', 0);
 INSERT INTO `edu_wrong_question` VALUES (3, 1, 3, 2, '2026-02-06 09:59:57', '2026-02-06 09:59:57', 0);
-INSERT INTO `edu_wrong_question` VALUES (4, 1, 4, 1, '2026-02-06 10:00:00', '2026-02-06 10:00:00', 0);
+INSERT INTO `edu_wrong_question` VALUES (4, 1, 4, 2, '2026-02-06 10:00:00', '2026-02-06 10:00:00', 0);
 INSERT INTO `edu_wrong_question` VALUES (5, 1, 6, 1, '2026-02-06 14:17:24', '2026-02-06 14:17:25', 1);
-INSERT INTO `edu_wrong_question` VALUES (6, 1, 5, 1, '2026-02-06 14:17:34', '2026-02-06 14:17:34', 0);
+INSERT INTO `edu_wrong_question` VALUES (6, 1, 5, 1, '2026-02-06 14:17:34', '2026-02-26 15:58:14', 1);
 INSERT INTO `edu_wrong_question` VALUES (7, 3, 6, 2, '2026-02-08 11:57:10', '2026-02-08 11:57:10', 0);
 INSERT INTO `edu_wrong_question` VALUES (8, 1, 16, 1, '2026-02-08 15:29:55', '2026-02-08 15:29:55', 0);
 INSERT INTO `edu_wrong_question` VALUES (9, 1, 12, 1, '2026-02-08 15:29:55', '2026-02-08 15:29:55', 0);
@@ -636,6 +781,8 @@ INSERT INTO `edu_wrong_question` VALUES (12, 1, 19, 1, '2026-02-08 15:29:55', '2
 INSERT INTO `edu_wrong_question` VALUES (13, 1, 7, 1, '2026-02-08 15:29:55', '2026-02-08 15:29:55', 0);
 INSERT INTO `edu_wrong_question` VALUES (14, 1, 10, 1, '2026-02-08 15:29:55', '2026-02-08 15:29:55', 0);
 INSERT INTO `edu_wrong_question` VALUES (15, 1, 9, 1, '2026-02-08 15:29:55', '2026-02-08 15:29:55', 0);
+INSERT INTO `edu_wrong_question` VALUES (16, 10, 6, 1, '2026-02-12 19:14:45', '2026-02-12 19:14:45', 0);
+INSERT INTO `edu_wrong_question` VALUES (17, 1, 6, 3, '2026-02-12 19:58:32', '2026-02-12 19:58:32', 0);
 
 -- ----------------------------
 -- Table structure for oj_problem
@@ -682,67 +829,6 @@ CREATE TABLE `oj_submission`  (
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Table structure for sys_notice
--- ----------------------------
-DROP TABLE IF EXISTS `community_post`;
-CREATE TABLE `community_post`  (
-  `id` bigint(0) NOT NULL AUTO_INCREMENT,
-  `user_id` bigint(0) NOT NULL,
-  `title` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `code_snippet` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
-  `status` tinyint(0) NOT NULL DEFAULT 1,
-  `best_reply_id` bigint(0) NULL DEFAULT NULL,
-  `view_count` int(0) NOT NULL DEFAULT 0,
-  `last_reply_at` datetime(0) NULL DEFAULT NULL,
-  `created_at` datetime(0) NOT NULL,
-  `updated_at` datetime(0) NOT NULL,
-  `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_community_post_user`(`user_id`) USING BTREE,
-  INDEX `idx_community_post_status`(`status`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Table structure for community_reply
--- ----------------------------
-DROP TABLE IF EXISTS `community_reply`;
-CREATE TABLE `community_reply`  (
-  `id` bigint(0) NOT NULL AUTO_INCREMENT,
-  `post_id` bigint(0) NOT NULL,
-  `user_id` bigint(0) NOT NULL,
-  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `code_snippet` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
-  `is_best` tinyint(0) NOT NULL DEFAULT 0,
-  `status` tinyint(0) NOT NULL DEFAULT 1,
-  `created_at` datetime(0) NOT NULL,
-  `updated_at` datetime(0) NOT NULL,
-  `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_community_reply_post`(`post_id`) USING BTREE,
-  INDEX `idx_community_reply_user`(`user_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Table structure for community_moderation
--- ----------------------------
-DROP TABLE IF EXISTS `community_moderation`;
-CREATE TABLE `community_moderation`  (
-  `id` bigint(0) NOT NULL AUTO_INCREMENT,
-  `target_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `target_id` bigint(0) NOT NULL,
-  `action` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `operator_id` bigint(0) NOT NULL,
-  `created_at` datetime(0) NOT NULL,
-  `updated_at` datetime(0) NOT NULL,
-  `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_community_moderation_target`(`target_type`, `target_id`) USING BTREE,
-  INDEX `idx_community_moderation_operator`(`operator_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
 -- Table structure for sys_audit_log
 -- ----------------------------
 DROP TABLE IF EXISTS `sys_audit_log`;
@@ -760,7 +846,13 @@ CREATE TABLE `sys_audit_log`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_audit_module_action`(`module`, `action`) USING BTREE,
   INDEX `idx_audit_target`(`target_type`, `target_id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_audit_log
+-- ----------------------------
+INSERT INTO `sys_audit_log` VALUES (1, 'COMMUNITY', 'APPROVE', 'POST', 1, 1, NULL, '2026-02-12 19:55:40', '2026-02-12 19:55:40', 0);
+INSERT INTO `sys_audit_log` VALUES (2, 'COURSE_REVIEW', 'APPROVE', 'COURSE', 7, 1, '课程审核状态变更为: 1', '2026-02-26 16:03:55', '2026-02-26 16:03:55', 0);
 
 -- ----------------------------
 -- Table structure for sys_notice
@@ -776,7 +868,7 @@ CREATE TABLE `sys_notice`  (
   `updated_at` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
   `is_deleted` tinyint(0) NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_notice
@@ -805,7 +897,7 @@ CREATE TABLE `sys_notice_user`  (
   `is_deleted` tinyint(0) NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_notice_user`(`user_id`, `notice_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 40 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 47 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_notice_user
@@ -848,6 +940,14 @@ INSERT INTO `sys_notice_user` VALUES (36, 9, 3, 1, '2026-02-06 15:56:44', '2026-
 INSERT INTO `sys_notice_user` VALUES (37, 1, 9, 1, '2026-02-08 10:13:42', '2026-02-08 10:13:42', 1);
 INSERT INTO `sys_notice_user` VALUES (38, 3, 9, 1, '2026-02-08 11:31:55', '2026-02-08 11:31:55', 1);
 INSERT INTO `sys_notice_user` VALUES (39, 3, 8, 1, '2026-02-08 11:31:55', '2026-02-08 11:31:55', 1);
+INSERT INTO `sys_notice_user` VALUES (40, 10, 9, 1, '2026-02-12 18:50:09', '2026-02-12 18:50:09', 1);
+INSERT INTO `sys_notice_user` VALUES (41, 10, 8, 1, '2026-02-12 18:50:09', '2026-02-12 18:50:09', 1);
+INSERT INTO `sys_notice_user` VALUES (42, 10, 7, 1, '2026-02-12 18:50:12', '2026-02-12 18:50:12', 1);
+INSERT INTO `sys_notice_user` VALUES (43, 10, 6, 1, '2026-02-12 18:50:13', '2026-02-12 18:50:13', 1);
+INSERT INTO `sys_notice_user` VALUES (44, 10, 5, 1, '2026-02-12 18:50:13', '2026-02-12 18:50:13', 1);
+INSERT INTO `sys_notice_user` VALUES (45, 10, 4, 1, '2026-02-12 18:50:14', '2026-02-12 18:50:14', 1);
+INSERT INTO `sys_notice_user` VALUES (46, 10, 1, 1, '2026-02-12 18:50:14', '2026-02-12 18:50:14', 1);
+INSERT INTO `sys_notice_user` VALUES (47, 10, 2, 1, '2026-02-12 18:50:14', '2026-02-12 18:50:14', 1);
 
 -- ----------------------------
 -- Table structure for sys_role
@@ -884,7 +984,7 @@ CREATE TABLE `sys_teacher_apply`  (
   `updated_at` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(0),
   `is_deleted` tinyint(0) NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_teacher_apply
@@ -907,24 +1007,28 @@ CREATE TABLE `sys_user`  (
   `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `avatar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `status` tinyint(0) NOT NULL DEFAULT 1,
-  `mute_status` tinyint(0) NOT NULL DEFAULT 0,
-  `ban_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `created_at` datetime(0) NOT NULL,
   `updated_at` datetime(0) NOT NULL,
   `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
+  `mute_status` tinyint(0) NOT NULL DEFAULT 0,
+  `ban_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `username`(`username`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user
 -- ----------------------------
-INSERT INTO `sys_user` VALUES (1, 'kagema12', '$2a$10$8lpkN0nqJ5oF.0rwoMZ9l.mbeASdlXsGvJ5qfSIZ5TExar4LVpBeq', '2522086087@qq.com', '19710119320', 'https://pic2.zhimg.com/v2-8d3f288feae0e511dee5c3d6735ca999_1440w.jpg', 1, 0, NULL, '2026-02-05 19:35:00', '2026-02-05 19:35:00', 0);
-INSERT INTO `sys_user` VALUES (3, '吕老师', '$2a$10$tVsPDcdUFQjuCm8MvVrPRuKhCxqX.lXOvCoyax116hxr0uykmD7ta', '19710119320@163.com', NULL, NULL, 1, 0, NULL, '2026-02-06 15:14:40', '2026-02-06 15:14:40', 0);
-INSERT INTO `sys_user` VALUES (4, '临时老师', '$2a$10$B4K02OPD.GsTGCA6EYGKFOioQcBn2S.H5KifMUG2GvWG0YdCbPJwS', '854riva@virgilian.com', NULL, NULL, 1, 0, NULL, '2026-02-06 15:22:55', '2026-02-06 15:22:55', 0);
-INSERT INTO `sys_user` VALUES (5, '测试用户2', '$2a$10$qCSa9ZUm/Im0sxm4vgEXJeYDqlKzzdoxoyCzHvnucW.mOKsfDOOUK', 'mlakd7uvnoew@ibymail.com', NULL, NULL, 1, 0, NULL, '2026-02-06 15:29:35', '2026-02-06 15:29:35', 0);
-INSERT INTO `sys_user` VALUES (8, '吕老师1', '$2a$10$ucIYfmCiUEofKjH6F3DKh..Ok4.ya1sGFoesb01NvXr7zU93jw8Zi', 'mlakjaacxlru@ibymail.com', NULL, NULL, 1, 0, NULL, '2026-02-06 15:35:26', '2026-02-06 15:35:26', 0);
-INSERT INTO `sys_user` VALUES (9, '测试一号', '$2a$10$48BMMdf69xW1/pg9cbUfbu.UvOt5o9Bs42tj21GrnXVQvc.gss7Jq', '3497986240@qq.com', NULL, NULL, 1, 0, NULL, '2026-02-06 15:42:58', '2026-02-06 15:42:58', 0);
+INSERT INTO `sys_user` VALUES (1, 'kagema12', '$2a$10$8lpkN0nqJ5oF.0rwoMZ9l.mbeASdlXsGvJ5qfSIZ5TExar4LVpBeq', '2522086087@qq.com', '19710119320', 'https://pic2.zhimg.com/v2-8d3f288feae0e511dee5c3d6735ca999_1440w.jpg', 1, '2026-02-05 19:35:00', '2026-02-05 19:35:00', 0, 0, NULL);
+INSERT INTO `sys_user` VALUES (3, '吕老师', '$2a$10$tVsPDcdUFQjuCm8MvVrPRuKhCxqX.lXOvCoyax116hxr0uykmD7ta', '19710119320@163.com', NULL, NULL, 1, '2026-02-06 15:14:40', '2026-02-06 15:14:40', 0, 0, NULL);
+INSERT INTO `sys_user` VALUES (4, '临时老师', '$2a$10$B4K02OPD.GsTGCA6EYGKFOioQcBn2S.H5KifMUG2GvWG0YdCbPJwS', '854riva@virgilian.com', NULL, NULL, 1, '2026-02-06 15:22:55', '2026-02-06 15:22:55', 0, 0, NULL);
+INSERT INTO `sys_user` VALUES (5, '测试用户2', '$2a$10$qCSa9ZUm/Im0sxm4vgEXJeYDqlKzzdoxoyCzHvnucW.mOKsfDOOUK', 'mlakd7uvnoew@ibymail.com', NULL, NULL, 1, '2026-02-06 15:29:35', '2026-02-06 15:29:35', 0, 0, NULL);
+INSERT INTO `sys_user` VALUES (8, '吕老师1', '$2a$10$ucIYfmCiUEofKjH6F3DKh..Ok4.ya1sGFoesb01NvXr7zU93jw8Zi', 'mlakjaacxlru@ibymail.com', NULL, NULL, 1, '2026-02-06 15:35:26', '2026-02-06 15:35:26', 0, 0, NULL);
+INSERT INTO `sys_user` VALUES (9, '测试一号', '$2a$10$48BMMdf69xW1/pg9cbUfbu.UvOt5o9Bs42tj21GrnXVQvc.gss7Jq', '3497986240@qq.com', NULL, NULL, 1, '2026-02-06 15:42:58', '2026-02-06 15:42:58', 0, 0, NULL);
+INSERT INTO `sys_user` VALUES (10, '我是小学生', '$2a$10$O2SNj3cpPJD3s5Ql/WLJy.v21pbhqJcD1LYY1XgGCtXY.Qgdj3Ok2', 'mljc6hz644i6@ibymail.com', '19710119320', NULL, 1, '2026-02-12 18:49:59', '2026-02-12 18:49:59', 0, 0, NULL);
+INSERT INTO `sys_user` VALUES (11, '本地学生', '$2a$10$mLr2RI/YXq/0/0B1ryU4x.5.F7iuLF7Gl3xhP3zT0WU4oLEa0QNm6', 'student@example.com', NULL, NULL, 1, '2026-04-04 20:51:26', '2026-04-04 20:51:26', 0, 0, NULL);
+INSERT INTO `sys_user` VALUES (12, '本地教师', '$2a$10$zG1IY2HzOo0ACkMu0Uvk0OAJeCPV.MG73UuHx1xZHVQeoMveKrEom', 'teacher@example.com', NULL, NULL, 1, '2026-04-04 20:51:26', '2026-04-04 20:51:26', 0, 0, NULL);
+INSERT INTO `sys_user` VALUES (13, '本地管理员', '$2a$10$3jJHqC.boJD1Nw/9yoUsWO8qxlgtDnxl8ZCNbmiXNvLEAhsUyU4Ea', 'admin@example.com', NULL, '/uploads/avatars/avatar_13_1f38f725fc174778a729f13ed7146f4b.png', 1, '2026-04-04 20:51:26', '2026-04-04 20:51:26', 0, 0, NULL);
 
 -- ----------------------------
 -- Table structure for sys_user_role
@@ -939,7 +1043,7 @@ CREATE TABLE `sys_user_role`  (
   `is_deleted` tinyint(0) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_user_role`(`user_id`, `role_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of sys_user_role
@@ -956,5 +1060,9 @@ INSERT INTO `sys_user_role` VALUES (10, 8, 1, '2026-02-06 15:35:26', '2026-02-06
 INSERT INTO `sys_user_role` VALUES (11, 8, 2, '2026-02-06 15:36:02', '2026-02-06 15:36:02', 0);
 INSERT INTO `sys_user_role` VALUES (12, 9, 1, '2026-02-06 15:42:58', '2026-02-06 15:42:58', 0);
 INSERT INTO `sys_user_role` VALUES (13, 9, 2, '2026-02-06 15:43:30', '2026-02-06 15:43:30', 0);
+INSERT INTO `sys_user_role` VALUES (14, 10, 1, '2026-02-12 18:49:59', '2026-02-12 18:49:59', 0);
+INSERT INTO `sys_user_role` VALUES (15, 11, 1, '2026-04-04 20:51:26', '2026-04-04 20:51:26', 0);
+INSERT INTO `sys_user_role` VALUES (16, 12, 2, '2026-04-04 20:51:26', '2026-04-04 20:51:26', 0);
+INSERT INTO `sys_user_role` VALUES (17, 13, 3, '2026-04-04 20:51:26', '2026-04-04 20:51:26', 0);
 
 SET FOREIGN_KEY_CHECKS = 1;

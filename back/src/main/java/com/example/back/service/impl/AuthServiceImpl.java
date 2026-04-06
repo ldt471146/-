@@ -242,6 +242,7 @@ public class AuthServiceImpl implements AuthService {
         vo.setId(user.getId());
         vo.setUsername(user.getUsername());
         vo.setEmail(user.getEmail());
+        vo.setPhone(user.getPhone());
         vo.setAvatar(user.getAvatar());
         vo.setStatus(user.getStatus());
         vo.setRoles(roles);
@@ -279,3 +280,5 @@ public class AuthServiceImpl implements AuthService {
 
     // no-op
 }
+
+

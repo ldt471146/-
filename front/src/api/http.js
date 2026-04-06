@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { getToken, clearToken } from '../utils/auth'
+import { clearStoredUser } from '../utils/session'
 
 // Axios 实例
 const http = axios.create({
@@ -28,6 +29,7 @@ http.interceptors.response.use(
   (error) => {
     if (error?.response?.status === 401) {
       clearToken()
+      clearStoredUser()
       window.location.href = '/login'
     }
     return Promise.reject(error)

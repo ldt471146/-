@@ -16,10 +16,7 @@ import com.example.back.mapper.SysUserMapper;
 import com.example.back.service.AuditLogService;
 import com.example.back.service.CommunityService;
 import com.example.back.util.SecurityUtil;
-import com.example.back.vo.CommunityPostDetailVO;
-import com.example.back.vo.CommunityPostVO;
-import com.example.back.vo.CommunityReplyVO;
-import com.example.back.vo.PageResultVO;
+import com.example.back.vo.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,7 +27,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 社区服务实现
+ * 社区帖子、回复与治理审核服务
  */
 @Service
 public class CommunityServiceImpl implements CommunityService {
@@ -77,7 +74,7 @@ public class CommunityServiceImpl implements CommunityService {
     public CommunityPostDetailVO postDetail(Long postId) {
         CommunityPost post = postMapper.selectById(postId);
         if (post == null || post.getStatus() == null || post.getStatus() != STATUS_NORMAL) {
-            throw new IllegalArgumentException("帖子不存在或已被处理");
+            throw new IllegalArgumentException("帖子不存在或暂不可回复");
         }
 
         post.setViewCount((post.getViewCount() == null ? 0 : post.getViewCount()) + 1);
@@ -133,7 +130,7 @@ public class CommunityServiceImpl implements CommunityService {
 
         CommunityPost post = postMapper.selectById(postId);
         if (post == null || post.getStatus() == null || post.getStatus() != STATUS_NORMAL) {
-            throw new IllegalArgumentException("帖子不存在或已被处理");
+            throw new IllegalArgumentException("帖子不存在或暂不可回复");
         }
 
         CommunityReply reply = new CommunityReply();
@@ -214,6 +211,20 @@ public class CommunityServiceImpl implements CommunityService {
         vo.setSize(size);
         vo.setTotal(result.getTotal());
         vo.setRecords(records);
+        return vo;
+    }
+
+    @Override
+    public CommunityModerationOverviewVO adminOverview() {
+        CommunityModerationOverviewVO vo = new CommunityModerationOverviewVO();
+        vo.setTotalPosts(postMapper.selectCount(new LambdaQueryWrapper<CommunityPost>()));
+        vo.setNormalPosts(postMapper.selectCount(new LambdaQueryWrapper<CommunityPost>().eq(CommunityPost::getStatus, STATUS_NORMAL)));
+        vo.setHiddenPosts(postMapper.selectCount(new LambdaQueryWrapper<CommunityPost>().eq(CommunityPost::getStatus, STATUS_HIDDEN)));
+        vo.setTotalReplies(replyMapper.selectCount(new LambdaQueryWrapper<CommunityReply>()));
+        vo.setNormalReplies(replyMapper.selectCount(new LambdaQueryWrapper<CommunityReply>().eq(CommunityReply::getStatus, STATUS_NORMAL)));
+        vo.setHiddenReplies(replyMapper.selectCount(new LambdaQueryWrapper<CommunityReply>().eq(CommunityReply::getStatus, STATUS_HIDDEN)));
+        vo.setBestReplyCount(replyMapper.selectCount(new LambdaQueryWrapper<CommunityReply>().eq(CommunityReply::getIsBest, 1)));
+        vo.setMutedUsers(userMapper.selectCount(new LambdaQueryWrapper<SysUser>().eq(SysUser::getMuteStatus, 1)));
         return vo;
     }
 
@@ -315,7 +326,7 @@ public class CommunityServiceImpl implements CommunityService {
     private SysUser requireInteractiveUser() {
         Long userId = SecurityUtil.getUserId();
         if (userId == null) {
-            throw new IllegalArgumentException("未登录");
+            throw new IllegalArgumentException("用户未登录");
         }
         SysUser user = userMapper.selectById(userId);
         if (user == null || user.getStatus() == null || user.getStatus() != 1) {

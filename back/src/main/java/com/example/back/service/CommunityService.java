@@ -3,6 +3,7 @@ package com.example.back.service;
 import com.example.back.dto.AdminCommunityReviewRequest;
 import com.example.back.dto.CommunityPostCreateRequest;
 import com.example.back.dto.CommunityReplyCreateRequest;
+import com.example.back.vo.CommunityModerationOverviewVO;
 import com.example.back.vo.CommunityPostDetailVO;
 import com.example.back.vo.CommunityPostVO;
 import com.example.back.vo.CommunityReplyVO;
@@ -23,6 +24,8 @@ public interface CommunityService {
     PageResultVO<CommunityPostVO> adminListPosts(String keyword, Integer status, long page, long size);
 
     PageResultVO<CommunityReplyVO> adminListReplies(Long postId, Integer status, long page, long size);
+
+    CommunityModerationOverviewVO adminOverview();
 
     void reviewPost(Long postId, AdminCommunityReviewRequest request);
 

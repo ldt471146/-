@@ -1,533 +1,504 @@
 <script setup>
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import http from '../api/http'
+import { clearAssistantSession, readAssistantSession, writeAssistantSession } from '../utils/assistantSession'
+import { getStoredUser } from '../utils/session'
+
+const MAX_MESSAGES = 40
+const HISTORY_LIMIT = 8
+
+const defaultMessages = () => ([
+  {
+    role: 'assistant',
+    content: '你好，我是平台学习助手，可协助课程学习、作业说明、考试答疑和练习建议。你可以直接提问，也可以从左侧功能列表开始。'
+  }
+])
+
+const shortcutSections = [
+  {
+    title: '常用功能',
+    items: [
+      { label: '课程答疑', prompt: '请告诉我如何在这个平台上完成一门课程的完整学习流程。' },
+      { label: '作业辅导', prompt: '请告诉我如何查看、完成并提交平台中的作业。' },
+      { label: '考试说明', prompt: '请说明这个平台里的模拟考试和考试任务有什么区别。' },
+      { label: '学习建议', prompt: '请结合编程学习场景，给我一个适合新手的学习建议。' }
+    ]
+  },
+  {
+    title: '快捷问题',
+    items: [
+      { label: '为什么这题做错了？', prompt: '我做题总是出错，请告诉我应该如何分析错题并复盘。' },
+      { label: '编程题怎么入手？', prompt: '面对一道编程题时，应该按什么步骤理解题意、设计思路并检查答案？' },
+      { label: '如何准备答辩演示？', prompt: '请从毕业设计演示角度，告诉我这个平台应该重点展示哪些功能。' }
+    ]
+  }
+]
 
 const open = ref(false)
 const input = ref('')
 const loading = ref(false)
-const messages = ref([
-  { role: 'assistant', content: '你好，我是你的二次元编程助手。想练哪一块，我来带你。' }
-])
+const messages = ref(defaultMessages())
+const bodyRef = ref(null)
+const sessionUser = ref(getStoredUser())
 
-const viewport = ref({ w: 0, h: 0 })
-const ball = ref({ x: 0, y: 0 })
-const panelSize = ref({ w: 380, h: 500 })
-const pos = ref({ x: 0, y: 0 })
+const getCurrentUser = () => getStoredUser() || sessionUser.value || null
 
-const draggingPanel = ref(false)
-const panelOffset = ref({ x: 0, y: 0 })
-const resizing = ref(false)
-const resizeStart = ref({ x: 0, y: 0, w: 0, h: 0 })
-const draggingBall = ref(false)
-const movedBall = ref(false)
-const ballOffset = ref({ x: 0, y: 0 })
-
-const idleFrames = ['/assistant/anime_part_1.png', '/assistant/anime_part_2.png']
-const talkFrames = ['/assistant/anime_part_3.png', '/assistant/anime_part_4.png']
-const thinkFrame = '/assistant/anime_part_2.png'
-
-const avatarState = ref('idle') // idle/talk/think
-const avatarMain = ref(idleFrames[0])
-const avatarOverlay = ref(idleFrames[1])
-const overlayVisible = ref(false)
-const overlayReady = ref(false)
-
-let idleTimer = null
-let talkTimer = null
-let talkResetTimer = null
-let overlayTimer = null
-
-const scrollToBottom = () => {
-  const el = document.querySelector('.ai-body')
-  if (el) el.scrollTop = el.scrollHeight
-}
-
-const clearTimers = () => {
-  if (idleTimer) clearTimeout(idleTimer)
-  if (talkTimer) clearInterval(talkTimer)
-  if (talkResetTimer) clearTimeout(talkResetTimer)
-  if (overlayTimer) clearTimeout(overlayTimer)
-  idleTimer = null
-  talkTimer = null
-  talkResetTimer = null
-  overlayTimer = null
-}
-
-const smoothSwap = (src) => {
-  if (!src || src === avatarMain.value) return
-  avatarOverlay.value = src
-  overlayReady.value = false
-  overlayVisible.value = false
-  requestAnimationFrame(() => {
-    overlayReady.value = true
-    requestAnimationFrame(() => {
-      overlayVisible.value = true
-    })
+const persistSession = () => {
+  writeAssistantSession(getCurrentUser(), {
+    open: open.value,
+    messages: messages.value.slice(-MAX_MESSAGES)
   })
-  if (overlayTimer) clearTimeout(overlayTimer)
-  overlayTimer = setTimeout(() => {
-    avatarMain.value = src
-    overlayVisible.value = false
-    overlayReady.value = false
-  }, 240)
 }
 
-const runIdleAnim = () => {
-  if (avatarState.value !== 'idle') return
-  const next = avatarMain.value === idleFrames[0] ? idleFrames[1] : idleFrames[0]
-  smoothSwap(next)
-  const gap = 2400 + Math.round(Math.random() * 1600)
-  idleTimer = setTimeout(runIdleAnim, gap)
+const restoreSession = () => {
+  sessionUser.value = getStoredUser()
+  const saved = readAssistantSession(getCurrentUser())
+  if (!saved?.messages?.length) {
+    open.value = false
+    messages.value = defaultMessages()
+    return
+  }
+  open.value = saved.open
+  messages.value = saved.messages.slice(-MAX_MESSAGES)
 }
 
-const runTalkAnim = (duration = 1900) => {
-  avatarState.value = 'talk'
-  if (idleTimer) clearTimeout(idleTimer)
-  let idx = 0
-  if (talkTimer) clearInterval(talkTimer)
-  talkTimer = setInterval(() => {
-    if (avatarState.value !== 'talk') return
-    smoothSwap(talkFrames[idx % talkFrames.length])
-    idx++
-  }, 460)
-  if (talkResetTimer) clearTimeout(talkResetTimer)
-  talkResetTimer = setTimeout(() => {
-    avatarState.value = 'idle'
-    if (talkTimer) clearInterval(talkTimer)
-    smoothSwap(idleFrames[0])
-    runIdleAnim()
-  }, duration)
-}
-
-const setThinking = () => {
-  avatarState.value = 'think'
-  if (idleTimer) clearTimeout(idleTimer)
-  if (talkTimer) clearInterval(talkTimer)
-  smoothSwap(thinkFrame)
-}
-
-const placePanelNearBall = () => {
-  const gap = 16
-  const xRight = ball.value.x + 92
-  const xLeft = ball.value.x - panelSize.value.w - gap
-  const useRight = xRight + panelSize.value.w <= viewport.value.w - 12
-  const x = useRight ? xRight : Math.max(12, xLeft)
-  const y = Math.min(Math.max(12, ball.value.y - 18), Math.max(12, viewport.value.h - panelSize.value.h - 12))
-  pos.value = { x, y }
-}
-
-const toggle = () => {
-  if (movedBall.value) return
-  open.value = !open.value
-  if (open.value) {
-    placePanelNearBall()
-    nextTick(() => scrollToBottom())
+const scrollToBottom = async () => {
+  await nextTick()
+  const el = bodyRef.value
+  if (el) {
+    el.scrollTop = el.scrollHeight
   }
 }
 
-const onPanelMouseDown = (e) => {
-  draggingPanel.value = true
-  e.preventDefault()
-  const panel = e.currentTarget.closest('.ai-panel')
-  if (!panel) return
-  const rect = panel.getBoundingClientRect()
-  panelOffset.value = { x: e.clientX - rect.left, y: e.clientY - rect.top }
-  document.addEventListener('pointermove', onPanelMouseMove)
-  document.addEventListener('pointerup', onPanelMouseUp)
+const openPanel = async () => {
+  open.value = true
+  await scrollToBottom()
 }
 
-const onPanelMouseMove = (e) => {
-  if (!draggingPanel.value) return
-  const maxX = viewport.value.w - panelSize.value.w - 12
-  const maxY = viewport.value.h - panelSize.value.h - 12
-  let x = e.clientX - panelOffset.value.x
-  let y = e.clientY - panelOffset.value.y
-  x = Math.max(12, Math.min(maxX, x))
-  y = Math.max(12, Math.min(maxY, y))
-  pos.value = { x, y }
+const closePanel = () => {
+  open.value = false
 }
 
-const onPanelMouseUp = () => {
-  draggingPanel.value = false
-  document.removeEventListener('pointermove', onPanelMouseMove)
-  document.removeEventListener('pointerup', onPanelMouseUp)
+const resetConversation = async () => {
+  messages.value = defaultMessages()
+  clearAssistantSession(getCurrentUser())
+  persistSession()
+  await scrollToBottom()
 }
 
-const onResizeDown = (e) => {
-  resizing.value = true
-  e.preventDefault()
-  resizeStart.value = { x: e.clientX, y: e.clientY, w: panelSize.value.w, h: panelSize.value.h }
-  document.addEventListener('pointermove', onResizing)
-  document.addEventListener('pointerup', onResizeUp)
+const fillPrompt = (prompt) => {
+  input.value = prompt
 }
 
-const onResizing = (e) => {
-  if (!resizing.value) return
-  const dx = e.clientX - resizeStart.value.x
-  const dy = e.clientY - resizeStart.value.y
-  const w = Math.max(320, Math.min(640, resizeStart.value.w + dx))
-  const h = Math.max(320, Math.min(760, resizeStart.value.h + dy))
-  panelSize.value = { w, h }
+const appendAssistantMessage = (content) => {
+  messages.value = [...messages.value, { role: 'assistant', content }].slice(-MAX_MESSAGES)
 }
 
-const onResizeUp = () => {
-  resizing.value = false
-  document.removeEventListener('pointermove', onResizing)
-  document.removeEventListener('pointerup', onResizeUp)
-}
-
-const onBallDown = (e) => {
-  draggingBall.value = true
-  movedBall.value = false
-  e.preventDefault()
-  ballOffset.value = { x: e.clientX - ball.value.x, y: e.clientY - ball.value.y }
-  document.addEventListener('pointermove', onBallMove)
-  document.addEventListener('pointerup', onBallUp)
-}
-
-const onBallMove = (e) => {
-  if (!draggingBall.value) return
-  const size = 84
-  const maxX = viewport.value.w - size - 12
-  const maxY = viewport.value.h - size - 12
-  let x = e.clientX - ballOffset.value.x
-  let y = e.clientY - ballOffset.value.y
-  x = Math.max(12, Math.min(maxX, x))
-  y = Math.max(12, Math.min(maxY, y))
-  if (Math.abs(x - ball.value.x) > 2 || Math.abs(y - ball.value.y) > 2) movedBall.value = true
-  ball.value = { x, y }
-  if (open.value) placePanelNearBall()
-}
-
-const onBallUp = () => {
-  draggingBall.value = false
-  document.removeEventListener('pointermove', onBallMove)
-  document.removeEventListener('pointerup', onBallUp)
-  setTimeout(() => {
-    movedBall.value = false
-  }, 80)
-}
-
-const onResize = () => {
-  viewport.value = { w: window.innerWidth, h: window.innerHeight }
-  if (ball.value.x === 0 && ball.value.y === 0) {
-    ball.value = { x: viewport.value.w - 116, y: viewport.value.h - 170 }
-  }
-}
-
-const send = async () => {
-  const content = input.value.trim()
+const send = async (preset = '') => {
+  const content = String(preset || input.value).trim()
   if (!content || loading.value) return
-  messages.value.push({ role: 'user', content })
+
+  const history = messages.value.slice(-HISTORY_LIMIT).map((item) => ({
+    role: item.role,
+    content: item.content
+  }))
+
+  messages.value = [...messages.value, { role: 'user', content }].slice(-MAX_MESSAGES)
   input.value = ''
   loading.value = true
-  setThinking()
-  await nextTick()
-  scrollToBottom()
+  await scrollToBottom()
+
   try {
-    const res = await http.post('/api/assistant/chat', {
+    const response = await http.post('/api/assistant/chat', {
       message: content,
-      history: messages.value.slice(-8).map((m) => ({ role: m.role, content: m.content }))
+      history
     })
-    messages.value.push({ role: 'assistant', content: res.data?.content || '暂时没有回复内容。' })
-    runTalkAnim(2200)
-  } catch (e) {
-    messages.value.push({ role: 'assistant', content: '抱歉，当前助手连接失败，请稍后再试。' })
-    avatarState.value = 'idle'
-    smoothSwap(idleFrames[0])
-    runIdleAnim()
+    appendAssistantMessage(response.data?.content || '暂时没有回复内容。')
+  } catch (error) {
+    appendAssistantMessage(error?.message || '抱歉，当前助手连接失败，请稍后再试。')
   } finally {
     loading.value = false
-    await nextTick()
-    scrollToBottom()
+    await scrollToBottom()
   }
 }
 
-onMounted(() => {
-  onResize()
-  runIdleAnim()
-  window.addEventListener('resize', onResize)
+const handleShortcut = async (item) => {
+  if (!item?.prompt) return
+  fillPrompt(item.prompt)
+  await nextTick()
+}
+
+const handleKeydown = async (event) => {
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault()
+    await send()
+  }
+}
+
+const handleProfileUpdated = () => {
+  sessionUser.value = getStoredUser()
+  restoreSession()
+}
+
+watch(open, persistSession)
+watch(messages, persistSession, { deep: true })
+
+onMounted(async () => {
+  restoreSession()
+  window.addEventListener('profile-updated', handleProfileUpdated)
+  if (open.value) {
+    await scrollToBottom()
+  }
 })
 
 onBeforeUnmount(() => {
-  clearTimers()
-  document.removeEventListener('pointermove', onPanelMouseMove)
-  document.removeEventListener('pointerup', onPanelMouseUp)
-  document.removeEventListener('pointermove', onBallMove)
-  document.removeEventListener('pointerup', onBallUp)
-  document.removeEventListener('pointermove', onResizing)
-  document.removeEventListener('pointerup', onResizeUp)
-  window.removeEventListener('resize', onResize)
+  window.removeEventListener('profile-updated', handleProfileUpdated)
 })
 </script>
 
 <template>
-  <div class="ai-root">
-    <button
-      class="ai-avatar-btn"
-      :style="{ left: `${ball.x}px`, top: `${ball.y}px` }"
-      @pointerdown.prevent="onBallDown"
-      @click="toggle"
-      :aria-label="open ? '关闭助手' : '打开助手'"
-    >
-      <div class="avatar-aura"></div>
-      <img class="avatar-img main" :src="avatarMain" alt="assistant-avatar" />
-      <img
-        v-if="overlayReady"
-        class="avatar-img overlay"
-        :class="{ visible: overlayVisible }"
-        :src="avatarOverlay"
-        alt="assistant-avatar-overlay"
-      />
-      <div class="avatar-chip">{{ loading ? '思考中' : 'AI' }}</div>
+  <div class="assistant-shell">
+    <transition name="assistant-fade">
+      <section v-if="open" class="assistant-panel">
+        <header class="assistant-panel__header">
+          <div class="assistant-panel__title-wrap">
+            <div class="assistant-panel__badge">AI</div>
+            <div>
+              <div class="assistant-panel__title">学习助手</div>
+              <div class="assistant-panel__sub">课程答疑 · 作业辅导 · 考试说明 · 学习建议</div>
+            </div>
+          </div>
+          <button class="assistant-panel__close" type="button" @click="closePanel">收起</button>
+        </header>
+
+        <div class="assistant-panel__content">
+          <aside class="assistant-sidebar">
+            <div v-for="section in shortcutSections" :key="section.title" class="assistant-section">
+              <div class="assistant-section__title">{{ section.title }}</div>
+              <button
+                v-for="item in section.items"
+                :key="item.label"
+                class="assistant-section__item"
+                type="button"
+                @click="handleShortcut(item)"
+              >
+                {{ item.label }}
+              </button>
+            </div>
+
+            <div class="assistant-section assistant-section--actions">
+              <div class="assistant-section__title">会话管理</div>
+              <button class="assistant-section__item is-danger" type="button" @click="resetConversation">清空记录</button>
+              <div class="assistant-section__hint">本地自动保存最近 {{ MAX_MESSAGES }} 条对话</div>
+            </div>
+          </aside>
+
+          <div class="assistant-chat">
+            <div ref="bodyRef" class="assistant-chat__body">
+              <div class="assistant-chat__tip">提示：点击左侧功能项可快速填入问题，你也可以直接编辑后发送。</div>
+
+              <div v-for="(message, index) in messages" :key="`${message.role}-${index}`" class="assistant-message" :class="message.role">
+                <div class="assistant-message__label">{{ message.role === 'assistant' ? '学习助手' : '我' }}</div>
+                <div class="assistant-message__bubble">{{ message.content }}</div>
+              </div>
+
+              <div v-if="loading" class="assistant-message assistant">
+                <div class="assistant-message__label">学习助手</div>
+                <div class="assistant-message__bubble is-loading">正在整理回答，请稍等…</div>
+              </div>
+            </div>
+
+            <footer class="assistant-chat__footer">
+              <textarea
+                v-model="input"
+                class="assistant-chat__input"
+                placeholder="请输入课程、练习、作业或考试相关问题，按 Enter 发送，Shift + Enter 换行"
+                @keydown="handleKeydown"
+              />
+              <div class="assistant-chat__actions">
+                <button class="assistant-chat__ghost" type="button" @click="input = ''">清空输入</button>
+                <button class="assistant-chat__send" type="button" :disabled="loading" @click="send()">发送</button>
+              </div>
+            </footer>
+          </div>
+        </div>
+      </section>
+    </transition>
+
+    <button v-if="!open" class="assistant-trigger" type="button" @click="openPanel">
+      <span class="assistant-trigger__badge">AI</span>
+      <span class="assistant-trigger__copy">
+        <strong>AI 学习助手</strong>
+        <em>课程答疑 · 作业辅导 · 支持记录恢复</em>
+      </span>
     </button>
-
-    <div
-      v-if="open"
-      class="ai-panel"
-      :style="{
-        left: `${pos.x}px`,
-        top: `${pos.y}px`,
-        width: `${panelSize.w}px`,
-        height: `${panelSize.h}px`
-      }"
-    >
-      <div class="ai-header" @pointerdown.prevent="onPanelMouseDown">
-        <img class="header-avatar" :src="avatarMain" alt="assistant-mini" />
-        <div class="header-meta">
-          <div class="ai-title">二次元编程助手</div>
-          <div class="ai-sub">{{ loading ? '正在思考你的问题...' : '课程答疑 · 代码思路 · 题目讲解' }}</div>
-        </div>
-        <button class="ai-close" @click="toggle">×</button>
-      </div>
-
-      <div class="ai-body">
-        <div v-for="(m, idx) in messages" :key="idx" class="ai-msg" :class="m.role">
-          <div class="ai-bubble">{{ m.content }}</div>
-        </div>
-        <div v-if="loading" class="ai-msg assistant">
-          <div class="ai-bubble">我在整理思路，请稍等...</div>
-        </div>
-      </div>
-
-      <div class="ai-input">
-        <input
-          v-model="input"
-          placeholder="比如：这题为什么选 C？"
-          @keyup.enter="send"
-        />
-        <button class="ai-send" @click="send">发送</button>
-      </div>
-
-      <div class="ai-resize-handle" @pointerdown.prevent="onResizeDown"></div>
-    </div>
   </div>
 </template>
 
 <style scoped>
-.ai-root {
+.assistant-shell {
   position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
+  right: 24px;
+  bottom: 24px;
+  z-index: 9600;
 }
 
-.ai-root > * {
-  pointer-events: auto;
+.assistant-trigger,
+.assistant-panel,
+.assistant-section__item,
+.assistant-chat__input,
+.assistant-chat__ghost,
+.assistant-chat__send,
+.assistant-panel__close {
+  border: 1px solid var(--ui-border-soft);
+  box-shadow: var(--ui-chip-shadow);
 }
 
-.ai-avatar-btn {
-  position: fixed;
-  width: 90px;
-  height: 90px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  padding: 0;
-  animation: floatY 4.2s ease-in-out infinite;
-  touch-action: none;
-}
-
-.avatar-aura {
-  position: absolute;
-  inset: -10px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(70, 195, 255, 0.35), rgba(86, 255, 213, 0.1), transparent 72%);
-  filter: blur(3px);
-  animation: pulseAura 3.2s ease-in-out infinite;
-}
-
-.avatar-img {
-  position: absolute;
-  inset: 0;
-  width: 90px;
-  height: 90px;
-  object-fit: cover;
-  border-radius: 50%;
-  border: 2px solid rgba(135, 226, 255, 0.85);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
-}
-
-.avatar-img.overlay {
-  opacity: 0;
-  transition: opacity 220ms ease;
-}
-
-.avatar-img.overlay.visible {
-  opacity: 1;
-}
-
-.avatar-chip {
-  position: absolute;
-  right: -6px;
-  bottom: -4px;
-  font-size: 11px;
-  border-radius: 999px;
-  padding: 3px 8px;
-  color: #06111a;
-  background: linear-gradient(120deg, #89e7ff, #67ffc2);
-  border: 1px solid rgba(255, 255, 255, 0.45);
-}
-
-.ai-panel {
-  position: fixed;
+.assistant-trigger {
+  width: 268px;
   display: flex;
-  flex-direction: column;
-  border-radius: 18px;
-  overflow: hidden;
-  border: 1px solid var(--ui-border);
-  background:
-    radial-gradient(circle at 12% -8%, rgba(87, 205, 255, 0.16), transparent 40%),
-    radial-gradient(circle at 100% 0%, rgba(100, 255, 214, 0.12), transparent 42%),
-    var(--ui-surface);
-  box-shadow: 0 26px 58px rgba(0, 0, 0, 0.45);
-}
-
-.ai-header {
-  display: grid;
-  grid-template-columns: 42px 1fr auto;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--ui-border);
-  background: linear-gradient(120deg, rgba(124, 225, 255, 0.16), rgba(88, 255, 204, 0.12));
-  cursor: move;
-  user-select: none;
-  touch-action: none;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--ui-surface) 94%, transparent);
+  color: var(--ui-text);
+  cursor: pointer;
 }
 
-.header-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1px solid rgba(255, 255, 255, 0.38);
+.assistant-trigger__badge,
+.assistant-panel__badge {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--ui-accent) 82%, #fff), color-mix(in srgb, var(--ui-accent-2) 74%, #fff));
+  color: #fff;
+  font: 700 14px/1 var(--font-display);
 }
 
-.ai-title {
+.assistant-trigger__copy,
+.assistant-panel__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.assistant-trigger__copy {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.assistant-trigger__copy strong,
+.assistant-panel__title {
   font-size: 14px;
-  font-weight: 700;
   color: var(--ui-text);
 }
 
-.ai-sub {
-  margin-top: 2px;
-  font-size: 11px;
+.assistant-trigger__copy em,
+.assistant-panel__sub,
+.assistant-section__hint,
+.assistant-message__label,
+.assistant-chat__tip {
+  font-style: normal;
+  font-size: 12px;
   color: var(--ui-text-muted);
 }
 
-.ai-close {
-  border: none;
-  background: transparent;
-  color: var(--ui-text);
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 2px 4px;
-}
-
-.ai-body {
-  flex: 1;
-  overflow: auto;
-  padding: 12px;
+.assistant-panel {
+  width: min(860px, calc(100vw - 32px));
+  height: min(620px, calc(100vh - 40px));
   display: grid;
-  gap: 8px;
+  grid-template-rows: auto minmax(0, 1fr);
+  border-radius: 28px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ui-surface) 96%, transparent);
+  backdrop-filter: blur(18px);
 }
 
-.ai-msg {
+.assistant-panel__header {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--ui-border-soft);
 }
 
-.ai-msg.user {
-  justify-content: flex-end;
+.assistant-panel__close,
+.assistant-chat__ghost,
+.assistant-chat__send,
+.assistant-section__item {
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ui-surface-soft) 94%, transparent);
+  color: var(--ui-text);
+  cursor: pointer;
 }
 
-.ai-bubble {
-  max-width: min(75%, 520px);
-  padding: 8px 10px;
-  border-radius: 12px;
-  border: 1px solid var(--ui-border-soft);
-  background: var(--ui-surface-soft);
+.assistant-panel__close,
+.assistant-chat__ghost,
+.assistant-chat__send {
+  padding: 10px 14px;
+}
+
+.assistant-panel__content {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+}
+
+.assistant-sidebar {
+  min-height: 0;
+  padding: 18px;
+  border-right: 1px solid var(--ui-border-soft);
+  background: color-mix(in srgb, var(--ui-surface-soft) 82%, transparent);
+  overflow: auto;
+}
+
+.assistant-section + .assistant-section {
+  margin-top: 18px;
+}
+
+.assistant-section__title {
+  margin-bottom: 10px;
   font-size: 12px;
-  line-height: 1.55;
+  font-weight: 700;
+  color: var(--ui-text);
+}
+
+.assistant-section__item {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 11px 12px;
+  text-align: left;
+}
+
+.assistant-section__item.is-danger {
+  color: #b42318;
+}
+
+.assistant-chat {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.assistant-chat__body {
+  overflow: auto;
+  padding: 18px;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.assistant-chat__tip {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ui-accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ui-accent) 18%, transparent);
+}
+
+.assistant-message {
+  display: grid;
+  gap: 6px;
+}
+
+.assistant-message.user {
+  justify-items: end;
+}
+
+.assistant-message__bubble {
+  max-width: min(78%, 560px);
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--ui-surface-soft);
+  border: 1px solid var(--ui-border-soft);
+  color: var(--ui-text);
+  line-height: 1.65;
   white-space: pre-wrap;
 }
 
-.ai-msg.user .ai-bubble {
-  background: rgba(118, 216, 255, 0.2);
-  border-color: rgba(118, 216, 255, 0.32);
+.assistant-message.user .assistant-message__bubble {
+  background: color-mix(in srgb, var(--ui-accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--ui-accent) 22%, transparent);
 }
 
-.ai-input {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  border-top: 1px solid var(--ui-border);
-  padding: 10px;
-  background: var(--ui-surface-soft);
+.assistant-message__bubble.is-loading {
+  color: var(--ui-text-muted);
 }
 
-.ai-input input {
+.assistant-chat__footer {
+  padding: 16px 18px 18px;
+  border-top: 1px solid var(--ui-border-soft);
+  background: color-mix(in srgb, var(--ui-surface-soft) 88%, transparent);
+}
+
+.assistant-chat__input {
   width: 100%;
-  border-radius: 10px;
-  border: 1px solid var(--ui-border-soft);
+  min-height: 92px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  resize: none;
+  outline: none;
   background: var(--ui-surface);
   color: var(--ui-text);
-  font-size: 12px;
-  padding: 9px 10px;
-  outline: none;
 }
 
-.ai-send {
-  border: none;
-  border-radius: 10px;
-  padding: 0 14px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  color: #08131b;
-  background: linear-gradient(120deg, #7ee2ff, #74ffcb);
+.assistant-chat__actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
-.ai-resize-handle {
-  position: absolute;
-  right: 6px;
-  bottom: 6px;
-  width: 14px;
-  height: 14px;
-  border-right: 2px solid rgba(120, 224, 255, 0.7);
-  border-bottom: 2px solid rgba(120, 224, 255, 0.7);
-  cursor: se-resize;
-  touch-action: none;
+.assistant-chat__send:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
-@keyframes floatY {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+.assistant-fade-enter-active,
+.assistant-fade-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
-@keyframes pulseAura {
-  0%, 100% { opacity: 0.45; transform: scale(1); }
-  50% { opacity: 0.9; transform: scale(1.04); }
+.assistant-fade-enter-from,
+.assistant-fade-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+@media (max-width: 900px) {
+  .assistant-shell {
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+  }
+
+  .assistant-trigger {
+    width: 100%;
+  }
+
+  .assistant-panel {
+    width: 100%;
+    height: min(78vh, 680px);
+  }
+
+  .assistant-panel__content {
+    grid-template-columns: 1fr;
+  }
+
+  .assistant-sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--ui-border-soft);
+  }
+
+  .assistant-message__bubble {
+    max-width: 100%;
+  }
 }
 </style>

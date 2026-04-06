@@ -1,12 +1,16 @@
 package com.example.back.controller;
 
+import com.example.back.exception.GlobalExceptionHandler;
 import com.example.back.service.CodeProblemService;
 import com.example.back.vo.CodeSubmitResultVO;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -18,8 +22,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(CodeProblemController.class)
+@SpringBootTest(classes = CodeProblemControllerSubmitTest.TestApplication.class)
 @AutoConfigureMockMvc(addFilters = false)
+@Import({CodeProblemController.class, GlobalExceptionHandler.class})
 class CodeProblemControllerSubmitTest {
 
     @Autowired
@@ -74,5 +79,10 @@ class CodeProblemControllerSubmitTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(400))
                 .andExpect(jsonPath("$.message").value("题目不存在"));
+    }
+
+    @SpringBootConfiguration
+    @EnableAutoConfiguration
+    static class TestApplication {
     }
 }

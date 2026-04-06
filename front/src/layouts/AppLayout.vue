@@ -1,82 +1,219 @@
 <script setup>
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
-import { clearToken } from '../utils/auth'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getMe } from '../api/auth'
-import AiAssistant from '../components/AiAssistant.vue'
 import http from '../api/http'
+import AiAssistant from '../components/AiAssistant.vue'
+import { clearToken, getRemember } from '../utils/auth'
 import {
-  House,
-  Reading,
-  Collection,
-  Monitor,
-  Share,
-  Finished,
-  ChatDotRound,
+  clearStoredUser,
+  getActiveRole,
+  getAvailableRoles,
+  getRoleHome,
+  getStoredUser,
+  setActiveRole,
+  setStoredUser
+} from '../utils/session'
+import { getPortalSections, getPortalTitle, getQuickActions, THEME_ORDER } from '../config/portal'
+import {
   Bell,
-  DataAnalysis,
-  UserFilled,
-  Histogram,
-  User,
-  DocumentChecked,
-  Lightning,
+  ChatDotRound,
+  Collection,
   Compass,
-  MagicStick
+  DataAnalysis,
+  DocumentChecked,
+  Finished,
+  Histogram,
+  House,
+  Lightning,
+  Monitor,
+  Reading,
+  Share,
+  SwitchButton,
+  User,
+  UserFilled
 } from '@element-plus/icons-vue'
+
+const iconMap = {
+  Bell,
+  ChatDotRound,
+  Collection,
+  DataAnalysis,
+  DocumentChecked,
+  Finished,
+  Histogram,
+  House,
+  Monitor,
+  Reading,
+  Share,
+  User,
+  UserFilled
+}
+
+const roleMeta = {
+  STUDENT: {
+    mark: '学',
+    shortLabel: '学生',
+    label: '学生门户',
+    description: '聚焦课程学习、练习巩固和成长反馈。'
+  },
+  TEACHER: {
+    mark: '师',
+    shortLabel: '教师',
+    label: '教师门户',
+    description: '聚焦课程编排、题库管理和教学执行。'
+  },
+  ADMIN: {
+    mark: '管',
+    shortLabel: '管理',
+    label: '管理员门户',
+    description: '聚焦治理看板、审核流程和平台秩序。'
+  }
+}
+
+const themeOptions = [
+  { key: 'neon', label: '霓虹夜航', hint: '赛博荧光' },
+  { key: 'red', label: '赤焰竞速', hint: '热能暗红' },
+  { key: 'aurora', label: '极光晨雾', hint: '轻透高对比' }
+]
+
+const rolePathPrefixes = {
+  STUDENT: ['/dashboard', '/courses', '/practice', '/code-practice', '/learning-path', '/homework', '/reports', '/exams'],
+  TEACHER: ['/teacher'],
+  ADMIN: ['/admin']
+}
 
 const router = useRouter()
 const collapsed = ref(false)
-const user = ref({ username: '同学', avatar: '' })
-const theme = ref(localStorage.getItem('theme') || 'neon')
-if (!['neon', 'red', 'aurora'].includes(theme.value)) {
-  theme.value = 'neon'
-  localStorage.setItem('theme', theme.value)
-}
 const unread = ref(0)
-const isTeacher = computed(() => (user.value.roles || []).includes('TEACHER'))
-const isAdmin = computed(() => (user.value.roles || []).includes('ADMIN'))
-const roleLabel = computed(() => {
-  const roles = user.value.roles || []
-  if (roles.includes('ADMIN')) return '管理员'
-  if (roles.includes('TEACHER')) return '教师'
-  return '学生'
-})
+const quickRoute = ref('')
+const theme = ref(localStorage.getItem('theme') || 'neon')
+const user = ref(getStoredUser() || { username: '同学', avatar: '', roles: ['STUDENT'] })
+const activeRole = ref(getActiveRole(user.value))
+
+if (!THEME_ORDER.includes(theme.value)) {
+  theme.value = THEME_ORDER[0]
+}
+
+const availableRoles = computed(() => getAvailableRoles(user.value))
+const currentRoleMeta = computed(() => roleMeta[activeRole.value] || roleMeta.STUDENT)
+const portalTitle = computed(() => getPortalTitle(user.value, activeRole.value))
+const portalSections = computed(() => getPortalSections(user.value, unread.value, activeRole.value))
+const quickActions = computed(() => getQuickActions(user.value, unread.value, activeRole.value))
+const activeTheme = computed(() => themeOptions.find((item) => item.key === theme.value) || themeOptions[0])
 const todayLabel = computed(() => {
   const now = new Date()
   return `${now.getMonth() + 1}月${now.getDate()}日`
 })
-const handleProfileUpdate = (e) => {
-  const data = e?.detail || {}
-  user.value = { ...user.value, ...data }
+const userInitial = computed(() => String(user.value?.username || '同').slice(0, 1))
+const resolvedAvatar = computed(() => resolveAssetUrl(user.value?.avatar))
+const activeMenu = computed(() => {
+  const path = router.currentRoute.value.path
+  const prefixes = quickActions.value
+    .map((item) => item.path)
+    .sort((left, right) => right.length - left.length)
+  return prefixes.find((prefix) => path === prefix || path.startsWith(`${prefix}/`)) || path
+})
+
+const resolveAssetUrl = (value) => {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  if (/^data:/i.test(raw)) return raw
+  if (/^https?:\/\//i.test(raw) || raw.startsWith('//') || raw.startsWith('/')) return raw
+  return `/${raw.replace(/^\/+/, '')}`
+}
+
+const syncPortalRole = (path = router.currentRoute.value.path) => {
+  const matchedRole = Object.entries(rolePathPrefixes).find(([, prefixes]) =>
+    prefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))
+  )?.[0]
+
+  if (matchedRole && availableRoles.value.includes(matchedRole)) {
+    activeRole.value = matchedRole
+    setActiveRole(matchedRole, getRemember())
+    return
+  }
+
+  activeRole.value = getActiveRole(user.value)
 }
 
 const toggleAside = () => {
   collapsed.value = !collapsed.value
 }
 
-const handleLogout = () => {
-  clearToken()
-  router.push('/login')
+const handleProfileUpdate = (event) => {
+  const payload = event?.detail || {}
+  user.value = { ...user.value, ...payload }
+  setStoredUser(user.value, getRemember())
+  syncPortalRole()
+}
+
+const loadCurrentUser = async () => {
+  try {
+    const response = await getMe()
+    if (response.data) {
+      user.value = response.data
+      setStoredUser(response.data, getRemember())
+      activeRole.value = getActiveRole(response.data)
+    }
+  } catch {
+    // 401 会由拦截器统一处理
+  }
+}
+
+const loadUnread = async () => {
+  try {
+    const response = await http.get('/api/notices/unread-count')
+    unread.value = response.data || 0
+  } catch {
+    unread.value = 0
+  }
+}
+
+const applyTheme = (nextTheme) => {
+  if (!THEME_ORDER.includes(nextTheme)) return
+  theme.value = nextTheme
+  localStorage.setItem('theme', nextTheme)
+  document.documentElement.setAttribute('data-theme', nextTheme)
+}
+
+const switchPortal = (role) => {
+  if (!role || role === activeRole.value) return
+  activeRole.value = role
+  setActiveRole(role, getRemember())
+  router.push(getRoleHome(user.value, role))
+}
+
+const jumpQuick = (path) => {
+  if (!path) return
+  quickRoute.value = ''
+  router.push(path)
+}
+
+const goHome = () => {
+  router.push(getRoleHome(user.value, activeRole.value))
 }
 
 const goProfile = () => {
   router.push('/profile')
 }
 
-const goAccount = () => {
-  router.push('/profile')
+const handleLogout = () => {
+  clearToken()
+  clearStoredUser()
+  router.push('/login')
 }
+
+watch(
+  () => router.currentRoute.value.fullPath,
+  () => syncPortalRole()
+)
 
 onMounted(async () => {
   document.documentElement.setAttribute('data-theme', theme.value)
-  try {
-    const res = await getMe()
-    user.value = res.data || user.value
-  } catch (e) {
-    // 忽略拉取失败
-  }
+  await Promise.all([loadCurrentUser(), loadUnread()])
+  syncPortalRole()
   window.addEventListener('profile-updated', handleProfileUpdate)
-  await loadUnread()
   window.addEventListener('notice-updated', loadUnread)
 })
 
@@ -84,794 +221,523 @@ onBeforeUnmount(() => {
   window.removeEventListener('profile-updated', handleProfileUpdate)
   window.removeEventListener('notice-updated', loadUnread)
 })
-
-const loadUnread = async () => {
-  try {
-    const res = await http.get('/api/notices/unread-count')
-    unread.value = res.data || 0
-  } catch (e) {
-    // ignore
-  }
-}
-
-const goNotices = () => {
-  router.push('/notices')
-}
-
-const activeMenu = computed(() => {
-  const path = router.currentRoute.value.path
-  if (path.startsWith('/courses')) return '/courses'
-  if (path.startsWith('/practice')) return '/practice'
-  if (path.startsWith('/code-practice')) return '/code-practice'
-  if (path.startsWith('/learning-path')) return '/learning-path'
-  if (path.startsWith('/homework')) return '/homework'
-  if (path.startsWith('/community')) return '/community'
-  if (path.startsWith('/reports')) return '/reports'
-  if (path.startsWith('/exams')) return '/exams'
-  if (path.startsWith('/notices')) return '/notices'
-  if (path.startsWith('/profile')) return '/profile'
-  if (path.startsWith('/teacher/homework')) return '/teacher/homework'
-  if (path.startsWith('/teacher/stats')) return '/teacher/stats'
-  if (path.startsWith('/teacher')) return '/teacher'
-  if (path.startsWith('/admin/users')) return '/admin/users'
-  if (path.startsWith('/admin/courses')) return '/admin/courses'
-  if (path.startsWith('/admin/community')) return '/admin/community'
-  if (path.startsWith('/admin')) return '/admin/teacher-apply'
-  return path
-})
-
-const quickRoute = ref('')
-const quickOptions = computed(() => {
-  const items = [
-    { label: '学习总览', value: '/dashboard' },
-    { label: '我的课程', value: '/courses' },
-    { label: '题库练习', value: '/practice' },
-    { label: '编程判题', value: '/code-practice' },
-    { label: '学习路径', value: '/learning-path' },
-    { label: '我的作业', value: '/homework' },
-    { label: '在线考试', value: '/exams' },
-    { label: '编程社区', value: '/community' },
-    { label: `消息通知${unread.value > 0 ? ` (${unread.value})` : ''}`, value: '/notices' },
-    { label: '成长报告', value: '/reports' }
-  ]
-  if (isTeacher.value) items.push({ label: '教师端', value: '/teacher' })
-  if (isTeacher.value) items.push({ label: '作业管理', value: '/teacher/homework' })
-  if (isTeacher.value) items.push({ label: '教学统计', value: '/teacher/stats' })
-  if (isAdmin.value) items.push({ label: '用户管理', value: '/admin/users' })
-  if (isAdmin.value) items.push({ label: '课程审核', value: '/admin/courses' })
-  if (isAdmin.value) items.push({ label: '内容审核', value: '/admin/community' })
-  if (isAdmin.value) items.push({ label: '教师审核', value: '/admin/teacher-apply' })
-  return items
-})
-
-const jumpQuick = (path) => {
-  if (!path) return
-  router.push(path)
-  quickRoute.value = ''
-}
-
-const themes = ['neon', 'red', 'aurora']
-const toggleTheme = () => {
-  const idx = themes.indexOf(theme.value)
-  theme.value = themes[(idx + 1) % themes.length]
-  localStorage.setItem('theme', theme.value)
-  document.documentElement.setAttribute('data-theme', theme.value)
-}
 </script>
 
 <template>
-  <div class="layout-wrap">
-    <div class="hud-grid"></div>
-
-    <el-container class="layout">
-      <el-aside :width="collapsed ? '72px' : '240px'" class="aside">
-        <div class="brand">
-          <div class="brand-core">NEON</div>
-          <div v-if="!collapsed" class="brand-name">NEON LAB</div>
+  <div class="layout-shell">
+    <div class="layout-noise"></div>
+    <el-container class="layout-frame">
+      <el-aside class="portal-aside" :width="collapsed ? '96px' : '312px'">
+        <div class="brand-block">
+          <button class="brand-mark" type="button" @click="goHome">{{ currentRoleMeta.mark }}</button>
+          <div v-if="!collapsed" class="brand-copy">
+            <div class="brand-eyebrow">Code Galaxy</div>
+            <div class="brand-title">{{ currentRoleMeta.label }}</div>
+          </div>
+          <button class="collapse-btn" type="button" @click="toggleAside">{{ collapsed ? '→' : '←' }}</button>
         </div>
 
-        <el-menu class="menu" :default-active="activeMenu" :default-openeds="['learn', 'grow', 'manage']" :collapse="collapsed" router>
-          <el-menu-item index="/dashboard">
-            <el-icon class="menu-icon"><House /></el-icon>
-            学习总览
-          </el-menu-item>
-          <el-sub-menu index="learn">
-            <template #title>
-              <el-icon class="menu-icon"><Reading /></el-icon>
-              学习训练
-            </template>
-            <el-menu-item index="/courses">
-              <el-icon class="menu-icon"><Collection /></el-icon>
-              我的课程
-            </el-menu-item>
-            <el-menu-item index="/practice">
-              <el-icon class="menu-icon"><Monitor /></el-icon>
-              题库练习
-            </el-menu-item>
-            <el-menu-item index="/code-practice">
-              <el-icon class="menu-icon"><Monitor /></el-icon>
-              编程判题
-            </el-menu-item>
-            <el-menu-item index="/learning-path">
-              <el-icon class="menu-icon"><Share /></el-icon>
-              学习路径
-            </el-menu-item>
-            <el-menu-item index="/homework">
-              <el-icon class="menu-icon"><DocumentChecked /></el-icon>
-              我的作业
-            </el-menu-item>
-          </el-sub-menu>
-          <el-menu-item index="/exams">
-            <el-icon class="menu-icon"><Finished /></el-icon>
-            在线考试
-          </el-menu-item>
-          <el-sub-menu index="grow">
-            <template #title>
-              <el-icon class="menu-icon"><ChatDotRound /></el-icon>
-              互动成长
-            </template>
-            <el-menu-item index="/notices">
-              <el-icon class="menu-icon"><Bell /></el-icon>
-              消息通知
-              <el-badge v-if="unread > 0" :value="unread" class="menu-badge" />
-            </el-menu-item>
-            <el-menu-item index="/reports">
-              <el-icon class="menu-icon"><DataAnalysis /></el-icon>
-              成长报告
-            </el-menu-item>
-            <el-menu-item index="/community">
-              <el-icon class="menu-icon"><ChatDotRound /></el-icon>
-              编程社区
-            </el-menu-item>
-          </el-sub-menu>
-          <el-sub-menu v-if="isTeacher || isAdmin" index="manage">
-            <template #title>
-              <el-icon class="menu-icon"><UserFilled /></el-icon>
-              管理工作台
-            </template>
-            <el-menu-item v-if="isTeacher" index="/teacher">
-              <el-icon class="menu-icon"><User /></el-icon>
-              教师端
-            </el-menu-item>
-            <el-menu-item v-if="isTeacher" index="/teacher/stats">
-              <el-icon class="menu-icon"><Histogram /></el-icon>
-              教学统计
-            </el-menu-item>
-            <el-menu-item v-if="isTeacher" index="/teacher/homework">
-              <el-icon class="menu-icon"><DocumentChecked /></el-icon>
-              作业管理
-            </el-menu-item>
-            <el-menu-item v-if="isAdmin" index="/admin/users">
-              <el-icon class="menu-icon"><UserFilled /></el-icon>
-              用户管理
-            </el-menu-item>
-            <el-menu-item v-if="isAdmin" index="/admin/courses">
-              <el-icon class="menu-icon"><DocumentChecked /></el-icon>
-              课程审核
-            </el-menu-item>
-            <el-menu-item v-if="isAdmin" index="/admin/community">
-              <el-icon class="menu-icon"><ChatDotRound /></el-icon>
-              内容审核
-            </el-menu-item>
-            <el-menu-item v-if="isAdmin" index="/admin/teacher-apply">
-              <el-icon class="menu-icon"><DocumentChecked /></el-icon>
-              教师审核
-            </el-menu-item>
-          </el-sub-menu>
-        </el-menu>
+        <section class="role-panel" :class="{ 'is-collapsed': collapsed }">
+          <div class="role-panel__eyebrow">当前门户</div>
+          <div class="role-panel__title">{{ currentRoleMeta.label }}</div>
+          <div v-if="!collapsed" class="role-panel__desc">{{ currentRoleMeta.description }}</div>
+          <div v-if="availableRoles.length > 1" class="role-panel__switcher">
+            <button
+              v-for="role in availableRoles"
+              :key="role"
+              type="button"
+              class="role-panel__switch"
+              :class="{ 'is-active': activeRole === role }"
+              @click="switchPortal(role)"
+            >
+              <span>{{ roleMeta[role]?.shortLabel || role }}</span>
+            </button>
+          </div>
+        </section>
 
-        <div class="aside-footer">
-          <el-button v-if="!collapsed" type="danger" plain @click="handleLogout">退出登录</el-button>
-        </div>
+        <el-scrollbar class="aside-scroll">
+          <el-menu
+            :default-active="activeMenu"
+            class="portal-menu"
+            :collapse="collapsed"
+            :collapse-transition="false"
+            router
+          >
+            <template v-for="section in portalSections" :key="section.id">
+              <div v-if="!collapsed" class="menu-section-title">{{ section.title }}</div>
+              <el-menu-item v-for="item in section.items" :key="item.path" :index="item.path">
+                <el-icon><component :is="iconMap[item.icon] || House" /></el-icon>
+                <template #title>
+                  <div class="menu-item-row">
+                    <span>{{ item.label }}</span>
+                    <el-badge v-if="item.badge" :value="item.badge" :max="99" />
+                  </div>
+                </template>
+              </el-menu-item>
+            </template>
+          </el-menu>
+        </el-scrollbar>
       </el-aside>
 
       <el-container>
-        <el-header class="header">
-          <div class="header-left">
-            <el-button class="collapse-btn" text @click="toggleAside">
-              {{ collapsed ? '展开' : '收起' }}
-            </el-button>
-            <div>
-              <div class="title display">学习控制台</div>
-              <div class="subtitle">更少入口，更快到达目标功能</div>
-              <div class="title-metas">
-                <span class="meta-pill">
-                  <el-icon><Bell /></el-icon>
-                  未读 {{ unread }}
-                </span>
-                <span class="meta-pill">
-                  <el-icon><UserFilled /></el-icon>
-                  {{ roleLabel }}
-                </span>
-              </div>
+        <el-header class="portal-header">
+          <div class="header-copy">
+            <div class="header-eyebrow">{{ portalTitle.eyebrow }}</div>
+            <div class="header-title display">{{ portalTitle.title }}</div>
+            <div class="header-subtitle">{{ portalTitle.subtitle }}</div>
+            <div class="header-chips">
+              <span class="header-chip">{{ todayLabel }}</span>
+              <span class="header-chip">当前主题：<strong>{{ activeTheme.label }}</strong></span>
+              <span class="header-chip">未读通知 {{ unread }}</span>
             </div>
           </div>
-          <div class="header-right">
-            <div class="header-chip">
-              <el-icon><Lightning /></el-icon>
-              <span>今日任务日</span>
-              <strong>{{ todayLabel }}</strong>
-            </div>
-            <el-select
-              v-model="quickRoute"
-              class="quick-jump"
-              size="small"
-              filterable
-              clearable
-              placeholder="快速跳转"
-              @change="jumpQuick"
-            >
-              <el-option v-for="item in quickOptions" :key="item.value" :label="item.label" :value="item.value" />
-            </el-select>
-            <div class="status">
-              <span class="status-dot"></span>
-              online
-            </div>
-            <el-button class="theme-btn" size="small" @click="toggleTheme">
-              <el-icon><MagicStick /></el-icon>
-              {{ theme === 'neon' ? '赛博红' : theme === 'red' ? '极光' : '霓虹' }}
-            </el-button>
-            <el-button class="route-btn" size="small" @click="router.push('/dashboard')">
+
+          <div class="header-actions">
+            <el-button class="home-btn" circle @click="goHome">
               <el-icon><Compass /></el-icon>
-              主页
             </el-button>
-            <el-dropdown trigger="click">
-              <div class="user-entry">
-                <el-avatar :src="user.avatar" :size="44">
-                  {{ user.username?.slice(0, 1) || '同' }}
-                </el-avatar>
-                <div class="user-name">{{ user.username || '同学' }}</div>
-                <div class="role-chip">{{ roleLabel }}</div>
+
+            <el-select v-model="quickRoute" class="quick-jump" clearable placeholder="快速跳转" @change="jumpQuick">
+              <el-option v-for="item in quickActions" :key="item.path" :label="item.label" :value="item.path" />
+            </el-select>
+
+            <div class="theme-switcher">
+              <div class="theme-switcher__meta">
+                <span>Theme</span>
+                <strong>{{ activeTheme.label }}</strong>
+                <em>{{ activeTheme.hint }}</em>
               </div>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item @click="goProfile">个人设置</el-dropdown-item>
-                  <el-dropdown-item @click="goAccount">账号管理</el-dropdown-item>
-                  <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+              <div class="theme-switcher__options">
+                <button
+                  v-for="item in themeOptions"
+                  :key="item.key"
+                  type="button"
+                  class="theme-switcher__option"
+                  :class="{ 'is-active': theme === item.key }"
+                  @click="applyTheme(item.key)"
+                >
+                  <span class="theme-switcher__swatch" :class="`is-${item.key}`"></span>
+                  <span class="theme-switcher__name">{{ item.label }}</span>
+                </button>
+              </div>
+            </div>
+
+            <button class="user-card" type="button" @click="goProfile">
+              <el-avatar :src="resolvedAvatar" :size="42">{{ userInitial }}</el-avatar>
+              <div class="user-card__meta">
+                <strong>{{ user.username || '同学' }}</strong>
+                <span>{{ currentRoleMeta.label }}</span>
+              </div>
+            </button>
+
+            <el-button class="logout-btn" circle @click="handleLogout">
+              <el-icon><SwitchButton /></el-icon>
+            </el-button>
           </div>
         </el-header>
 
-        <el-main class="main">
-          <div class="content-shell">
+        <el-main class="portal-main">
+          <div class="content-panel">
             <router-view />
           </div>
         </el-main>
       </el-container>
     </el-container>
+
     <AiAssistant />
   </div>
 </template>
 
 <style scoped>
-.layout-wrap {
+.layout-shell {
   min-height: 100vh;
-  background: var(--ui-bg);
-  color: var(--ui-text);
+  background: var(--ui-shell-backdrop);
   position: relative;
-  overflow: hidden;
 }
 
-.hud-grid {
+.layout-noise {
   position: absolute;
   inset: 0;
-  background-image:
-    radial-gradient(circle at 8% 10%, rgba(94, 247, 194, 0.09), transparent 28%),
-    radial-gradient(circle at 94% 14%, rgba(56, 189, 248, 0.08), transparent 24%);
+  background:
+    var(--ui-shell-orb-1),
+    var(--ui-shell-orb-2),
+    var(--ui-shell-orb-3),
+    linear-gradient(var(--ui-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--ui-grid-line) 1px, transparent 1px);
+  background-size: auto, auto, auto, 32px 32px, 32px 32px;
+  opacity: var(--ui-grid-opacity);
   pointer-events: none;
 }
 
-
-.layout {
+.layout-frame {
+  position: relative;
   min-height: 100vh;
 }
 
-.aside {
-  background:
-    linear-gradient(165deg, rgba(8, 22, 36, 0.82), rgba(6, 16, 28, 0.88)),
-    var(--ui-surface);
-  border-right: 1px solid var(--ui-border-soft);
-  display: flex;
-  flex-direction: column;
-  padding: 16px 12px;
-  transition: width 0.2s ease;
-  backdrop-filter: blur(6px);
-  position: relative;
-  overflow: hidden;
+.portal-aside {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 18px;
+  padding: 20px 18px 20px 20px;
+  border-right: 1px solid var(--ui-aside-border);
+  background: var(--ui-aside-bg);
+  backdrop-filter: blur(18px);
 }
 
-.aside::before {
-  content: '';
-  position: absolute;
-  left: -80px;
-  top: -60px;
-  width: 220px;
-  height: 220px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.2), transparent 70%);
-  pointer-events: none;
+.brand-block,
+.role-panel,
+.portal-header,
+.content-panel {
+  border: 1px solid var(--ui-border-soft);
+  box-shadow: var(--ui-chip-shadow);
 }
 
-.aside::after {
-  content: '';
-  position: absolute;
-  right: -90px;
-  bottom: -70px;
-  width: 240px;
-  height: 240px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.16), transparent 72%);
-  pointer-events: none;
-}
-
-.brand {
+.brand-block {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 18px;
-  z-index: 1;
+  padding: 14px;
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--ui-surface) 88%, transparent);
 }
 
-.brand-core {
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, var(--ui-accent), var(--ui-accent-2));
-  color: #07101a;
-  font-weight: 700;
+.brand-mark {
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--ui-brand-border);
+  border-radius: 18px;
+  background: var(--ui-brand-bg);
+  color: var(--ui-brand-text);
+  font: 700 24px/1 var(--font-display);
+  cursor: pointer;
+}
+
+.brand-copy {
   display: grid;
-  place-items: center;
-  letter-spacing: 0.08em;
 }
 
-.brand-name {
-  font-size: 13px;
-  letter-spacing: 0.1em;
-  color: var(--ui-text);
+.brand-eyebrow,
+.menu-section-title,
+.role-panel__eyebrow,
+.header-eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ui-aside-muted);
 }
 
-.display {
-  font-family: var(--font-display);
-  letter-spacing: 0.04em;
-  line-height: 1.36;
+.brand-title,
+.role-panel__title {
+  color: var(--ui-aside-title);
+  font-weight: 700;
 }
 
-.menu {
+.collapse-btn,
+.role-panel__switch,
+.user-card {
   background: transparent;
+}
+
+.collapse-btn {
+  margin-left: auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid var(--ui-border-soft);
+  color: var(--ui-aside-title);
+  cursor: pointer;
+}
+
+.role-panel {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 24px;
+  background: var(--ui-aside-card-bg);
+}
+
+.role-panel__desc {
+  color: var(--ui-aside-body);
+  font-size: 13px;
+}
+
+.role-panel__switcher {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.role-panel__switch {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--ui-border-soft);
+  color: var(--ui-aside-title);
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.role-panel__switch:hover {
+  transform: translateY(-1px);
+  background: var(--ui-aside-hover-bg);
+}
+
+.role-panel__switch.is-active {
+  border-color: color-mix(in srgb, var(--ui-accent) 60%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--ui-accent) 18%, transparent), color-mix(in srgb, var(--ui-accent-2) 14%, transparent));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ui-accent) 20%, transparent) inset;
+}
+
+.role-panel.is-collapsed .role-panel__switcher {
+  grid-template-columns: 1fr;
+}
+
+.aside-scroll {
+  min-height: 0;
+}
+
+.portal-menu {
   border: none;
-  --el-menu-bg-color: transparent;
-  --el-menu-text-color: #e6f4ff;
-  --el-menu-hover-bg-color: rgba(86, 255, 213, 0.12);
-  --el-menu-active-color: var(--ui-accent);
-  z-index: 1;
+  background: transparent;
 }
 
-.menu-icon {
-  margin-right: 10px;
-  color: #94e7ff;
-  font-size: 16px;
+.menu-section-title {
+  padding: 12px 12px 6px;
 }
 
-.quick-jump {
-  width: 150px;
-}
-
-.aside-footer {
-  margin-top: auto;
-  display: flex;
-  justify-content: center;
-  padding-top: 12px;
-}
-
-.header {
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--ui-border-soft);
-  background:
-    linear-gradient(180deg, rgba(86, 255, 213, 0.09), rgba(86, 255, 213, 0.01)),
-    var(--ui-surface);
+.menu-item-row {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  backdrop-filter: blur(8px);
-  position: relative;
-  overflow: visible;
+  gap: 12px;
+}
+
+.portal-header {
+  margin: 20px 20px 0 10px;
   height: auto;
-  min-height: 56px;
-  line-height: normal;
-}
-
-.header::after {
-  content: '';
-  position: absolute;
-  right: -60px;
-  top: -80px;
-  width: 220px;
-  height: 220px;
-  background: radial-gradient(circle, rgba(0, 210, 255, 0.16), transparent 70%);
-  pointer-events: none;
-}
-
-.header-left {
+  min-height: 0;
+  padding: 18px 20px;
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--ui-surface) 86%, transparent);
   display: flex;
-  align-items: center;
-  gap: 12px;
-  z-index: 1;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
 }
 
-.header-right {
+.header-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.header-title {
+  font-size: clamp(36px, 5vw, 54px);
+  line-height: 1.04;
+  color: var(--ui-text);
+}
+
+.header-subtitle {
+  max-width: 640px;
+  color: var(--ui-text-muted);
+}
+
+.header-chips,
+.header-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  z-index: 1;
+  gap: 10px;
+}
+
+.header-chip,
+.theme-switcher,
+.user-card,
+.home-btn,
+.logout-btn {
+  border-radius: 16px;
+  border: 1px solid var(--ui-border-soft);
+  background: color-mix(in srgb, var(--ui-surface) 90%, transparent);
 }
 
 .header-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  color: var(--ui-text);
-  background: rgba(86, 255, 213, 0.08);
-  border: 1px solid var(--ui-border-soft);
-  font-size: 12px;
+  padding: 8px 12px;
+  color: var(--ui-text-muted);
 }
 
 .header-chip strong {
   color: var(--ui-accent);
-  font-weight: 700;
 }
 
-.status {
+.quick-jump {
+  width: 176px;
+}
+
+.theme-switcher {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 14px;
+  padding: 10px 12px;
+}
+
+.theme-switcher__meta {
+  display: grid;
+  min-width: 116px;
+}
+
+.theme-switcher__meta span,
+.theme-switcher__meta em {
+  font-size: 11px;
   color: var(--ui-text-muted);
+  font-style: normal;
 }
 
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--ui-accent);
-  box-shadow: 0 0 12px rgba(86, 255, 213, 0.7);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-.user-name {
-  font-size: 14px;
+.theme-switcher__meta strong {
   color: var(--ui-text);
+}
+
+.theme-switcher__options {
+  display: flex;
+  gap: 8px;
+}
+
+.theme-switcher__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  min-width: 92px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  color: var(--ui-text-muted);
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.theme-switcher__option:hover {
+  transform: translateY(-1px);
+  border-color: var(--ui-border);
+  color: var(--ui-text);
+}
+
+.theme-switcher__option.is-active {
+  border-color: color-mix(in srgb, var(--ui-accent) 60%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--ui-accent) 14%, transparent), color-mix(in srgb, var(--ui-accent-2) 10%, transparent));
+  color: var(--ui-text);
+}
+
+.theme-switcher__swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+}
+
+.theme-switcher__swatch.is-neon {
+  background: linear-gradient(135deg, #5ef7c2, #38bdf8);
+}
+
+.theme-switcher__swatch.is-red {
+  background: linear-gradient(135deg, #ff546f, #ffb454);
+}
+
+.theme-switcher__swatch.is-aurora {
+  background: linear-gradient(135deg, #0ea5e9, #22c55e);
+}
+
+.theme-switcher__name {
+  font-size: 12px;
   font-weight: 600;
 }
 
-.user-entry {
+.user-card {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  padding: 8px 12px;
+  color: var(--ui-text);
   cursor: pointer;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--ui-border-soft);
-  background: rgba(86, 255, 213, 0.05);
-  transition: all 0.2s ease;
 }
 
-.user-entry:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(2, 12, 24, 0.25);
+.user-card__meta {
+  display: grid;
+  text-align: left;
 }
 
-.role-chip {
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  border: 1px solid var(--ui-border);
-  color: var(--ui-text);
-  background: var(--ui-surface-soft);
-}
-
-.collapse-btn {
-  color: var(--ui-text);
-}
-
-.title {
-  font-size: 22px;
-  font-weight: 600;
-  padding-top: 6px;
-  line-height: 1.55;
-  font-family: var(--font-main);
-  letter-spacing: 0.01em;
-  overflow: visible;
-}
-
-.subtitle {
+.user-card__meta span {
   font-size: 12px;
   color: var(--ui-text-muted);
-  margin-top: 4px;
-  line-height: 1.45;
 }
 
-.title-metas {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
+.portal-main {
+  padding: 10px 20px 20px 10px;
 }
 
-.meta-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: #d9f3ff;
-  padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.04);
+.content-panel {
+  min-height: calc(100vh - 176px);
+  padding: 20px;
+  border-radius: 28px;
+  background: var(--ui-content-bg);
+  backdrop-filter: blur(14px);
 }
 
-.main {
-  padding: 20px 22px;
-  background:
-    radial-gradient(circle at 92% 12%, rgba(86, 255, 213, 0.1), transparent 24%),
-    radial-gradient(circle at 15% 86%, rgba(0, 210, 255, 0.09), transparent 22%);
-}
-
-.content-shell {
-  min-height: calc(100vh - 140px);
-  border: 1px solid var(--ui-border-soft);
-  border-radius: 18px;
-  padding: 14px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0)),
-    var(--ui-surface-soft);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 18px 36px rgba(1, 10, 22, 0.2);
-  position: relative;
-  overflow: hidden;
-  animation: shellIn 0.35s ease;
-}
-
-.content-shell::before {
-  content: '';
-  position: absolute;
-  left: -90px;
-  top: -80px;
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(86, 255, 213, 0.13), transparent 72%);
-  pointer-events: none;
-}
-
-.content-shell::after {
-  content: '';
-  position: absolute;
-  right: -120px;
-  bottom: -120px;
-  width: 240px;
-  height: 240px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 210, 255, 0.12), transparent 70%);
-  pointer-events: none;
-}
-
-:deep(.el-card) {
-  background: var(--ui-card);
-  border: 1px solid var(--ui-border-soft);
-  color: var(--ui-text);
+:deep(.el-menu-item),
+:deep(.el-sub-menu__title) {
+  min-height: 44px;
+  margin: 4px 0;
   border-radius: 14px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  color: var(--ui-aside-title);
 }
 
-:deep(.el-card:hover) {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(2, 12, 24, 0.22);
-  border-color: rgba(86, 255, 213, 0.35);
+:deep(.el-menu-item:hover),
+:deep(.el-sub-menu__title:hover) {
+  background: var(--ui-aside-hover-bg);
 }
 
-:deep(.el-card__header) {
-  border-bottom: 1px solid var(--ui-border-soft);
-}
-
-:deep(.el-table) {
-  border: 1px solid var(--ui-border-soft);
-  border-radius: 12px;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.02);
-}
-
-:deep(.el-table th.el-table__cell) {
-  background: rgba(86, 255, 213, 0.08);
-  color: var(--ui-text);
-}
-
-:deep(.el-table tr) {
-  background: transparent;
-}
-
-:deep(.el-table td.el-table__cell) {
-  border-bottom-color: rgba(255, 255, 255, 0.08);
+:deep(.el-menu-item.is-active) {
+  border: 1px solid color-mix(in srgb, var(--ui-accent) 42%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--ui-accent) 16%, transparent), color-mix(in srgb, var(--ui-accent-2) 14%, transparent));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--ui-accent) 16%, transparent);
 }
 
 :deep(.el-input__wrapper),
 :deep(.el-select__wrapper),
 :deep(.el-textarea__inner) {
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  border-radius: 14px;
+  background: var(--ui-chip-bg);
+  box-shadow: 0 0 0 1px var(--ui-chip-border) inset;
 }
 
-:deep(.el-input__wrapper.is-focus),
-:deep(.el-select__wrapper.is-focused),
-:deep(.el-textarea__inner:focus) {
-  box-shadow:
-    0 0 0 1px rgba(86, 255, 213, 0.55) inset,
-    0 0 0 3px rgba(86, 255, 213, 0.12);
-}
-
-:deep(.el-button) {
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-}
-
-:deep(.el-button:hover) {
-  transform: translateY(-1px);
-}
-
-:deep(.el-empty__description p) {
-  color: var(--ui-text-muted);
-}
-
-:deep(.el-pagination) {
-  padding-top: 6px;
-}
-
-:deep(.el-pagination .btn-prev),
-:deep(.el-pagination .btn-next),
-:deep(.el-pagination .el-pager li) {
-  border-radius: 8px;
-}
-
-.theme-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid var(--ui-border);
-  color: var(--ui-text);
-  background: rgba(86, 255, 213, 0.06);
-}
-
-.route-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid var(--ui-border-soft);
-  color: var(--ui-text);
-  background: rgba(0, 210, 255, 0.05);
-}
-
-.theme-btn:hover,
-.route-btn:hover {
-  transform: translateY(-1px);
-}
-
-:deep(.el-menu-item) {
-  border-radius: 10px;
-  margin: 4px 0;
-  min-height: 42px;
-  transition: all 0.18s ease;
-  color: #e6f4ff;
-}
-
-:deep(.el-sub-menu .el-sub-menu__title) {
-  border-radius: 10px;
-  margin: 4px 0;
-  min-height: 44px;
-  transition: all 0.18s ease;
-  color: #e6f4ff;
-}
-
-:deep(.el-sub-menu.is-active > .el-sub-menu__title) {
-  color: var(--ui-accent);
-}
-
-:deep(.el-menu-item.is-active) {
-  background: linear-gradient(120deg, rgba(86, 255, 213, 0.16), rgba(0, 210, 255, 0.12));
-  border: 1px solid var(--ui-border);
-  box-shadow: 0 0 16px rgba(86, 255, 213, 0.2);
-  transform: translateX(2px);
-}
-
-:deep(.el-menu-item.is-active .menu-dot) {
-  background: var(--ui-accent);
-  box-shadow: 0 0 12px rgba(86, 255, 213, 0.9);
-}
-
-:deep(.el-menu-item.is-active .menu-icon) {
-  color: #5ef7c2;
-}
-
-:deep(.el-menu-item:hover) {
-  transform: translateX(2px);
-}
-
-:deep(.el-sub-menu .el-menu-item) {
-  margin-left: 6px;
-}
-
-
-.menu-badge {
-  margin-left: auto;
-}
-
-:deep(.menu-badge .el-badge__content) {
-  background: var(--ui-accent-2);
-  color: #041018;
-  border: none;
-  box-shadow: 0 0 10px rgba(0, 210, 255, 0.35);
-}
-
-.content-shell::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.content-shell::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(86, 255, 213, 0.45), rgba(0, 210, 255, 0.45));
-}
-
-.content-shell::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 0.7;
+@media (max-width: 1320px) {
+  .portal-header {
+    flex-direction: column;
   }
-  50% {
-    transform: scale(1.2);
-    opacity: 1;
+
+  .header-actions {
+    justify-content: flex-start;
   }
 }
 
-@keyframes shellIn {
-  from {
-    opacity: 0.76;
-    transform: translateY(6px);
+@media (max-width: 900px) {
+  .layout-frame {
+    display: block;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
-@media (max-width: 960px) {
-  .subtitle {
-    line-height: 1.35;
+  .portal-aside {
+    width: 100% !important;
+    grid-template-rows: auto;
   }
-  .title-metas {
-    display: none;
+
+  .portal-main,
+  .portal-header {
+    margin-left: 20px;
   }
-  .header-chip,
-  .route-btn {
-    display: none;
+
+  .theme-switcher {
+    flex-direction: column;
+    align-items: stretch;
   }
-  .quick-jump {
-    display: none;
-  }
-  .header {
-    padding: 6px 8px;
-  }
-  .main {
-    padding: 14px;
+
+  .theme-switcher__options {
+    flex-wrap: wrap;
   }
 }
 </style>

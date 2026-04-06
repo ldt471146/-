@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.example.back.entity.EduChapter;
 import com.example.back.entity.EduCourse;
 import com.example.back.entity.EduLesson;
+import com.example.back.entity.SysUser;
 import com.example.back.mapper.EduChapterMapper;
 import com.example.back.mapper.EduCourseMapper;
 import com.example.back.mapper.EduQuestionMapper;
@@ -11,10 +12,12 @@ import com.example.back.mapper.EduQuestionOptionMapper;
 import com.example.back.mapper.EduLessonMapper;
 import com.example.back.mapper.EduCodeProblemMapper;
 import com.example.back.mapper.EduCodeTestcaseMapper;
+import com.example.back.mapper.SysUserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -25,6 +28,7 @@ import java.util.List;
  */
 @Slf4j
 @Component
+@Order(10)
 @RequiredArgsConstructor
 public class DataSeedRunner implements ApplicationRunner {
 
@@ -35,16 +39,22 @@ public class DataSeedRunner implements ApplicationRunner {
     private final EduQuestionOptionMapper optionMapper;
     private final EduCodeProblemMapper codeProblemMapper;
     private final EduCodeTestcaseMapper codeTestcaseMapper;
+    private final SysUserMapper userMapper;
 
     private Long insertCourse(String title, String intro) {
         EduCourse course = new EduCourse();
         course.setTitle(title);
         course.setIntro(intro);
         course.setCover(null);
-        course.setTeacherId(1L);
+        course.setTeacherId(resolveTeacherId());
         course.setStatus(1);
         courseMapper.insert(course);
         return course.getId();
+    }
+
+    private Long resolveTeacherId() {
+        SysUser teacher = userMapper.selectByEmail(DemoAccountSeedRunner.DEMO_TEACHER_EMAIL);
+        return teacher != null ? teacher.getId() : 1L;
     }
 
     private void seedPythonCourse(Long courseId) {

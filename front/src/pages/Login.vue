@@ -3,6 +3,7 @@ import { ref, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { login, register, sendCode, getMe } from '../api/auth'
 import { setToken, getRemember } from '../utils/auth'
+import { getRoleHome, setStoredUser } from '../utils/session'
 import { ElNotification } from 'element-plus'
 
 const router = useRouter()
@@ -82,6 +83,7 @@ const handleLogin = async () => {
     const { data } = await login({ email: email.value, password: password.value, remember: remember.value })
     setToken(data.token, remember.value)
     const me = await getMe()
+    setStoredUser(me.data, remember.value)
     errorMsg.value = `欢迎回来，${me.data.username}`
     ElNotification({
       title: '登录成功',
@@ -89,7 +91,7 @@ const handleLogin = async () => {
       type: 'success',
       duration: 2000
     })
-    router.push('/dashboard')
+    router.push(getRoleHome(me.data))
   } catch (e) {
     errorMsg.value = e?.message || '登录失败'
   } finally {
@@ -205,8 +207,9 @@ const handleRegister = async () => {
       code: code.value,
       roleCode: registerRole.value
     })
-    setToken(data.token, true)
+    setToken(data.token, false)
     const me = await getMe()
+    setStoredUser(me.data, false)
     errorMsg.value = `注册成功，欢迎 ${me.data.username}`
     ElNotification({
       title: '注册成功',
@@ -214,7 +217,7 @@ const handleRegister = async () => {
       type: 'success',
       duration: 2000
     })
-    router.push('/dashboard')
+    router.push(getRoleHome(me.data))
   } catch (e) {
     errorMsg.value = e?.message || '注册失败'
   } finally {
